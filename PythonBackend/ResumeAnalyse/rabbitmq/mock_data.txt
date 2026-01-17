@@ -1,0 +1,93 @@
+resume_analyse监听器的mock数据：
+1. 请求类型为REQUEST_RESUME_JD_DIFFER（"resume_jd_differ"）的情况：
+{
+    "userId": 0,
+    "requestType": "resume_jd_differ",
+    "resumeId": 67890,
+    "resumeFilePath": "/mnt/f/Program_Projects/IntelliJ IDEA Project/ResumeSystem/resumes/cbb7a43eb62f.pdf",
+    "jdID": 4,
+    "title": "Software Engineer",
+    "company": "TechNova Solutions",
+    "location": "San Francisco, CA",
+    "salary": "$90,000 - $120,000 / year",
+    "description": "As a Software Engineer, you'll design, develop, and maintain high-performance applications and systems.
+You will collaborate with cross-functional teams to deliver innovative solutions, write clean and efficient code, and troubleshoot software issues.",
+    "requirements": "Strong problem-solving skills, proficiency in programming languages (e.g., Java, Python, C++), and a passion for technology are essential.
+And we prefer the candidate which has 2+ years of experience in software development.",
+    "bonus": "Competitive salary, health insurance, 401k matching, paid time off, flexible work hours, and professional development opportunities.
+We also offer a collaborative work environment, wellness programs, and performance-based bonuses to support both personal and career growth.",
+    "jdFilePath": "",
+    "status": 0,
+    "analysisResult": "",
+    "retrievedResumes": [],
+    "retrievedJds": [],
+    "createTime": "2026-01-04T14:43:25.837483700"
+}
+
+2. 请求类型为REQUEST_RESUME_ADVISE（"resume_advise"）的情况：
+{
+    "userId": 0,
+    "requestType": "resume_advise",
+    "resumeId": 67890,
+    "resumeFilePath": "/mnt/f/Program_Projects/IntelliJ IDEA Project/ResumeSystem/resumes/cbb7a43eb62f.pdf",
+    "jdID": 54321,
+    "title": "Software Engineer",
+    "company": "Tech Corp",
+    "location": "San Francisco, CA",
+    "salary": "$100,000 - $120,000 / year",
+    "description": "Responsible for developing software solutions.",
+    "requirements": "3+ years of experience in software development.",
+    "bonus": "Health insurance, 401k matching.",
+    "jdFilePath": "",
+    "status": 0,
+    "analysisResult": "",
+    "retrievedResumes": [],
+    "retrievedJds": [],
+    "createTime": "2026-01-04T14:43:25.837483700"
+}
+
+
+resume_match监听器的mock数据：
+{
+    "userId": 0,
+    "requestType": "resume_match",
+    "resumeId": -1,
+    "resumeFilePath": "",
+    "jdID": 0,
+    "title": "招募前端开发工程师",
+    "company": "Tech Innovators Ltd.",
+    "location": "北京",
+    "salary": "10000-15000元/月",
+    "description": "负责公司网站和应用的前端开发与维护; 与设计团队合作，实现高质量的用户界面; 优化网站性能，提升用户体验; 参与需求分析和技术方案制定",
+    "requirements": "熟悉JavaScript、HTML、CSS等前端技术; 有React或Vue.js等主流框架的开发经验; 具备良好的代码编写习惯和团队合作精神; 有相关项目经验者优先考虑",
+    "bonus": "具有竞争力的薪资待遇; 弹性工作时间和远程办公选项; 完善的培训和职业发展机会; 丰富的员工活动和团队建设活动",
+    "jdFilePath": "",
+    "status": 0,
+    "analysisResult": "",
+    "retrievedResumes": [],
+    "retrievedJds": [],
+    "createTime": "2026-01-04T14:43:25.837483700"
+}
+
+
+jd_match监听器的mock数据：
+{
+    "userId": 0,
+    "requestType": "jd_match",
+    "resumeId": 67890,
+    "resumeFilePath": "/mnt/f/Program_Projects/IntelliJ IDEA Project/ResumeSystem/resumes/cbb7a43eb62f.pdf",
+    "jdID": -1,
+    "title": "",
+    "company": "",
+    "location": "",
+    "salary": "",
+    "description": "",
+    "requirements": "",
+    "bonus": "",
+    "jdFilePath": "",
+    "status": 0,
+    "analysisResult": "",
+    "retrievedResumes": [],
+    "retrievedJds": [],
+    "createTime": "2026-01-04T14:43:25.837483700"
+}

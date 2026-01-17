@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.kira.resumesystem.mapper.JDMapper">
+    <!-- Define SQL statements here -->
+    <select id="selectJDsByCondition" resultType="org.kira.resumesystem.entity.po.JD">
+        SELECT id, user_id, title, company, location, salary, file_path, create_time, update_time
+        FROM tb_jd
+        <where>
+            <if test="condition.id != null">
+                AND CAST(id AS CHAR) LIKE CONCAT('%', #{condition.id}, '%')
+            </if>
+            <if test="condition.userId != null">
+                AND CAST(user_id AS CHAR) LIKE CONCAT('%', #{condition.userId}, '%')
+            </if>
+            <if test="condition.jdKeyword != null and condition.jdKeyword != ''">
+                AND (
+                    title LIKE CONCAT('%', #{condition.jdKeyword}, '%')
+                    OR company LIKE CONCAT('%', #{condition.jdKeyword}, '%')
+                    OR location LIKE CONCAT('%', #{condition.jdKeyword}, '%')
+                    <!-- 使用REPLACE(file_path, '\\', '/')保证路径分隔符一定是'/'，然后通过SUBSTRING_INDEX获取整个文件名 -->
+                    <!-- 之后再通过SUBSTRING_INDEX获取到原始的文件名（去掉UUID和扩展名） -->
+                    OR SUBSTRING_INDEX(
+                         SUBSTRING_INDEX(REPLACE(file_path, '\\', '/'), '/', -1),
+                         '_',
+                         1
+                    ) LIKE CONCAT('%', #{condition.jdKeyword}, '%')
+                )
+            </if>
+            <if test="condition.period != null and condition.period != ''">
+                AND SUBSTRING_INDEX(salary, ' / ', -1) = #{condition.period}
+            </if>
+            <if test="condition.max_salary != null">
+                <!-- 提取 'min - max 元 / period' 中的 min 部分并转为数值进行比较 -->
+                AND CAST(SUBSTRING_INDEX(salary, ' - ', 1) AS DECIMAL(10,2)) &lt;= #{condition.max_salary}
+            </if>
+            <if test="condition.min_salary != null">
+                <!-- 提取 'min - max 元 / period' 中的 max 部分并转为数值进行比较 -->
+                AND CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(salary, ' / ', 1), ' - ', -1) AS DECIMAL(10,2)) &gt;= #{condition.min_salary}
+            </if>
+            <if test="condition.startCreateTime != null">
+                AND create_time &gt;= #{condition.startCreateTime}
+            </if>
+            <if test="condition.endCreateTime != null">
+                AND create_time &lt;= #{condition.endCreateTime}
+            </if>
+            <if test="condition.startUpdateTime != null">
+                AND update_time &gt;= #{condition.startUpdateTime}
+            </if>
+            <if test="condition.endUpdateTime != null">
+                AND update_time &lt;= #{condition.endUpdateTime}
+            </if>
+        </where>
+        ORDER BY update_time DESC
+    </select>
+</mapper>

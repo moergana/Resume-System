@@ -1,0 +1,8 @@
+langchain
+langgraph
+pydantic
+pika
+docling
+langchain-chroma
+langchain-huggingface
+numpy

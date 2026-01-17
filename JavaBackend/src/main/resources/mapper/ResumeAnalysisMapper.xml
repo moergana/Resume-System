@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.kira.resumesystem.mapper.ResumeAnalysisMapper">
+    <!-- Define SQL statements here -->
+    <select id="selectResumeAnalysisByCondition" resultType="org.kira.resumesystem.entity.po.ResumeAnalysis">
+        SELECT t.id, t.user_id, t.resume_id, t.jd_id, t.request_type, t.status, t.create_time
+        FROM tb_resume_analysis t
+        LEFT JOIN tb_resume r ON t.resume_id = r.id
+        LEFT JOIN tb_jd j ON t.jd_id = j.id
+        <where>
+            <if test="condition.id != null">
+                AND CAST(t.id AS CHAR) LIKE CONCAT('%', #{condition.id}, '%')
+            </if>
+            <if test="condition.userId != null">
+                AND CAST(t.user_id AS CHAR) LIKE CONCAT('%', #{condition.userId}, '%')
+            </if>
+            <if test="condition.resumeKeyword != null and condition.resumeKeyword != ''">
+                <!-- 关联查询Resume表中文件路径的文件名 -->
+                AND SUBSTRING_INDEX(
+                SUBSTRING_INDEX(
+                    REPLACE(r.file_path, '\\', '/'), '/', -1),
+                    '_',
+                    1
+                ) LIKE CONCAT('%', #{condition.resumeKeyword}, '%')
+            </if>
+            <if test="condition.jdKeyword != null and condition.jdKeyword != ''">
+                <!-- 关联查询JD表中的标题、公司、地点或文件路径文件名 -->
+                AND (
+                    j.title LIKE CONCAT('%', #{condition.jdKeyword}, '%')
+                    OR j.company LIKE CONCAT('%', #{condition.jdKeyword}, '%')
+                    OR j.location LIKE CONCAT('%', #{condition.jdKeyword}, '%')
+                    OR SUBSTRING_INDEX(
+                    SUBSTRING_INDEX(
+                        REPLACE(j.file_path, '\\', '/'), '/', -1),
+                        '_',
+                        1
+                    ) LIKE CONCAT('%', #{condition.jdKeyword}, '%')
+                )
+            </if>
+            <if test="condition.requestType != null and condition.requestType.size() > 0">
+                AND t.request_type IN
+                <foreach item="item" index="index" collection="condition.requestType" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="condition.status != null and condition.status.size() > 0">
+                AND t.status IN
+                <foreach item="item" index="index" collection="condition.status" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="condition.startCreateTime != null">
+                AND t.create_time &gt;= #{condition.startCreateTime}
+            </if>
+            <if test="condition.endCreateTime != null">
+                AND t.create_time &lt;= #{condition.endCreateTime}
+            </if>
+        </where>
+        ORDER BY t.create_time DESC
+    </select>
+</mapper>

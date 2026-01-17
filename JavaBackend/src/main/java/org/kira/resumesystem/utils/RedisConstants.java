@@ -1,0 +1,47 @@
+package org.kira.resumesystem.utils;
+
+import java.util.concurrent.TimeUnit;
+
+public class RedisConstants {
+    public static final String USER_LOGIN_KEY = "user:login:";  // 用户登录信息key前缀
+    public static final String USER_LOGIN_HASH_ID = "userId";   // 用户登录缓存中用户ID的key
+    public static final String USER_LOGIN_HASH_PASSWORD = "password";   // 用户登录缓存中用户密码的key
+    public static final String USER_LOGIN_HASH_ROLE = "role";   // 用户登录缓存中用户角色的key
+    public static final String USER_LOGIN_HASH_CD = USER_LOGIN_KEY + "cd_flag"; // 用户登录冷却key前缀
+    // 用户登录信息缓存的TTL和单位
+    public static final Long USER_LOGIN_TTL = 10L;   // 10 分钟
+    public static final TimeUnit USER_LOGIN_TTL_UNIT = TimeUnit.MINUTES;
+    // 用户登录冷却时间的TTL和单位，避免用户频繁尝试登录
+    public static final Long USER_LOGIN_CD_TTL = 2L;   // 2 秒
+    public static final TimeUnit USER_LOGIN_CD_TTL_UNIT = TimeUnit.SECONDS;
+
+    // 用户注册冷却时间的TTL和单位，避免用户频繁尝试注册重复用户名
+    public static final String USER_REGISTER_CD_KEY = "user:register:"; // 防止用户频繁尝试注册重复用户名的冷却key前缀
+    public static final Long USER_REGISTER_CD_TTL = 3L;   // 3 秒
+    public static final TimeUnit USER_REGISTER_CD_TTL_UNIT = TimeUnit.SECONDS;
+
+    // 通用的空值缓存TTL和单位，防止缓存穿透
+    public static final Long COMMON_NULL_TTL = 5L;   // 5 分钟
+    public static final TimeUnit COMMON_NULL_TTL_UNIT = TimeUnit.MINUTES;
+
+    // 简历在Redis中的缓存key前缀和TTL
+    public static final String RESUME_KEY = "resume:"; // 简历详情缓存的key前缀
+    public static final Long RESUME_TTL = 1L;   // 1 小时
+    public static final TimeUnit RESUME_TTL_UNIT = TimeUnit.HOURS;
+
+    // JD在Redis中的缓存key前缀和TTL
+    public static final String JD_KEY = "jd:"; // JD详情缓存的key前缀
+    public static final Long JD_TTL = 1L;   // 1 小时
+    public static final TimeUnit JD_TTL_UNIT = TimeUnit.HOURS;
+
+    // 简历分析结果在Redis中的缓存key前缀和TTL
+    public static final String RESUME_ANALYSIS_KEY = "resume_analysis:"; // 简历分析结果key前缀
+    public static final Long RESUME_ANALYSIS_TTL = 1L;   // 1 天
+    public static final TimeUnit RESUME_ANALYSIS_TTL_UNIT = TimeUnit.DAYS;
+
+    public static final String MATCH_RESULT_KEY = "match_result:"; // 简历JD匹配结果key前缀
+    public static final String JD_MATCH_RESULT_KEY = "jd_match_result:"; // JD匹配结果key前缀
+    public static final String RESUME_MATCH_RESULT_KEY = "resume_match_result:"; // 简历匹配结果key前缀
+    public static final Long MATCH_RESULT_TTL = 1L;   // 1 天
+    public static final TimeUnit MATCH_RESULT_TTL_UNIT = TimeUnit.DAYS;
+}

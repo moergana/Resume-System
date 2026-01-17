@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: ResumeAnalyse
+Version: 0.1.0
+Summary: Resume Analysis System Backend
+Requires-Python: >=3.8
+Requires-Dist: langchain
+Requires-Dist: langgraph
+Requires-Dist: pydantic
+Requires-Dist: pika
+Requires-Dist: docling
+Requires-Dist: langchain-chroma
+Requires-Dist: langchain-huggingface
+Requires-Dist: numpy
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

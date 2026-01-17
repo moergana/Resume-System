@@ -1,0 +1,60 @@
+server:
+  port: 8080
+spring:
+  application:
+   name: ResumeSystem
+  servlet:
+    multipart:
+      max-request-size: 50MB  # 最大请求大小
+      max-file-size: 50MB     # 最大文件大小
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/resume_system?useSSL=false&serverTimezone=UTC
+    username: root
+    password: WX040325sql9017
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    database: 1
+    password: wangxin123
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 10
+        min-idle: 1
+        time-between-eviction-runs: 10s
+  jackson:
+    default-property-inclusion: non_null # JSON处理时忽略非空字段
+  # RabbitMQ配置
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: resumesys
+    password: resume123
+    virtual-host: /resumesys
+    listener:
+      simple:
+        default-requeue-rejected: false   # 消费异常时拒绝消息，并且不重新入队列
+        retry:
+          enabled: false   # 是否启用重试
+          max-attempts: 2   # 最大重试次数
+        prefetch: 1
+        acknowledge-mode: manual    # 手动确认
+        concurrency: 3
+        max-concurrency: 10
+mybatis-plus:
+  type-aliases-package: org.kira.resumesystem # 别名扫描包，在配置mybatis时可以简化类名
+logging:
+  level:
+    org.kira: debug
+
+jwt:
+  location: classpath:resumesystem.jks  # keystore位置
+  alias: resumesystem   # keystore别名
+  password: resumesystem123   # keystore密码
+  tokenTTL: 86400  # token有效期，单位秒
+
+file:
+  # user.dir为当前项目根路径
+  resume_save_path: ${user.dir}/resumes   # 简历文件保存路径
+  jd_save_path: ${user.dir}/jds           # JD文件保存路径

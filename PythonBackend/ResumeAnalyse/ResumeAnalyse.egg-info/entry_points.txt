@@ -1,0 +1,2 @@
+[console_scripts]
+resume-services = ResumeAnalyse.StartupServices:start_all_services
