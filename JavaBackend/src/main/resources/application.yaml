@@ -11,12 +11,12 @@ spring:
     driver-class-name: com.mysql.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/resume_system?useSSL=false&serverTimezone=UTC
     username: root
-    password: WX040325sql9017
+    password: 
   redis:
     host: 127.0.0.1
     port: 6379
     database: 1
-    password: wangxin123
+    password: 
     lettuce:
       pool:
         max-active: 10
@@ -29,9 +29,9 @@ spring:
   rabbitmq:
     host: localhost
     port: 5672
-    username: resumesys
-    password: resume123
-    virtual-host: /resumesys
+    username: 
+    password: 
+    virtual-host: 
     listener:
       simple:
         default-requeue-rejected: false   # 消费异常时拒绝消息，并且不重新入队列
