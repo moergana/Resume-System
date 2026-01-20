@@ -20,12 +20,17 @@ public class UserControllerTests {
      * 登录测试用例：有效用户名和密码
      */
     @Test
-    public void Login_valid() {
+    public void Login_valid() throws InterruptedException {
         UserDTO userDTO = new UserDTO();
         userDTO.setUsername("test");
         userDTO.setPassword("123");
         userDTO.setRole(0);
         Result result = userController.login(userDTO);
+        if (result.getCode() != 200) {
+            System.out.println("Login_valid Error: " + result.getMessage());
+            Thread.sleep(4000);     // 可能是多次无效用例触发了冷却时间，等待几个秒后重试
+            result = userController.login(userDTO);
+        }
         assert result.getCode() == 200;
     }
 

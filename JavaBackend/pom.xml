@@ -129,6 +129,27 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
+        <!-- Bucket4j 令牌桶限流库（bucket4j-core为bucket4j的老版本依赖，不推荐使用） -->
+        <!--<dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j-core</artifactId>
+            <version>8.10.1</version>
+        </dependency>-->
+        <!-- Bucket4j 令牌桶限流库
+        bucket4j_jdk11/17-core/redis-common/lettuce/redisson等为bucket4j的新版本依赖，推荐使用
+        使用的时候需要注意选择对应的jdk版本，并且不要混用旧版本和新版本依赖。-->
+        <!-- 另外，core版本是bucket4j的基础功能，而redis-common是整合redis的版本，用于将Bucket对象从内存转移到Redis上保存和操作。
+        而连接Redis需要经过客户端，常见的有lettuce、Jedis、redisson，需要引入对应的依赖和bucket4j与客户端适配的依赖-->
+        <dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j_jdk11-redis-common</artifactId>
+            <version>8.15.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j_jdk11-lettuce</artifactId>
+            <version>8.15.0</version>
+        </dependency>
     </dependencies>
 
     <build>

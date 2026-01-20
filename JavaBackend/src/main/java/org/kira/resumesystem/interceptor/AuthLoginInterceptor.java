@@ -16,12 +16,9 @@ import javax.servlet.http.HttpServletResponse;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class AuthLoginInterceptor implements HandlerInterceptor {
     private final JwtTool jwtTool;
-
-    public AuthLoginInterceptor(JwtTool jwtTool) {
-        this.jwtTool = jwtTool;
-    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {

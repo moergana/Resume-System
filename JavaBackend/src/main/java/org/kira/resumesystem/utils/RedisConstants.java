@@ -52,4 +52,7 @@ public class RedisConstants {
     public static final String RESUME_MATCH_RESULT_KEY = "resume_match_result:"; // 简历匹配结果key前缀
     public static final Long MATCH_RESULT_TTL = 1L;   // 1 天
     public static final TimeUnit MATCH_RESULT_TTL_UNIT = TimeUnit.DAYS;
+
+    // Bucket4j-redis相关的Redis常量
+    public static final String BUCKET4J_KEY_PREFIX = "rate_limit:bucket4j:"; // Bucket4j限流key前缀
 }
