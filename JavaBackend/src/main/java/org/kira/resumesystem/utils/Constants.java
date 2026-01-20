@@ -1,6 +1,9 @@
 package org.kira.resumesystem.utils;
 
 public class Constants {
+    public static final Integer CANDIDATE_ROLE = 0;
+    public static final Integer RECRUITER_ROLE = 1;
+
     public static final Integer RESUME_ANALYSIS_WAITING_STATUS = 0;
     public static final Integer RESUME_ANALYSIS_ANALYSING_STATUS = 1;
     public static final Integer RESUME_ANALYSIS_FINISHED_STATUS = 2;

@@ -21,6 +21,16 @@ public class UserDTO {
     private String password = "";
 
     /**
+     * 邮箱
+     */
+    private String email = "";
+
+    /**
+     * 邮箱验证码
+     */
+    private String emailCode = "";
+
+    /**
      * 角色 0-求职者 1-招聘者
      */
     private Integer role = -1;

@@ -10,7 +10,7 @@
     </parent>
     <groupId>org.kira</groupId>
     <artifactId>ResumeSystem</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
     <name>ResumeSystem</name>
     <description>ResumeSystem</description>
     <url/>
@@ -74,6 +74,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <scope>runtime</scope>
@@ -86,10 +91,11 @@
         </dependency>
         <!-- mybatis-plus -->
         <!-- (引入了mybatis-plus之后就不需要再引入mybatis了，其内部集成了mybatis) -->
+        <!-- 需要注意版本：3.4.3版本存在bug，其list方法会出现mybatis初始化失败的问题。更新到3.5.1后就解决了 -->
         <dependency>
             <groupId>com.baomidou</groupId>
             <artifactId>mybatis-plus-boot-starter</artifactId>
-            <version>3.4.3</version>
+            <version>3.5.1</version>
         </dependency>
         <!--hutool-->
         <dependency>

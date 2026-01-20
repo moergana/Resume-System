@@ -23,5 +23,5 @@ public interface IResumeService extends IService<Resume> {
 
     Result deleteResumeById(Long id);
 
-    Result listAllJDs();
+    Result listAllResumes();
 }

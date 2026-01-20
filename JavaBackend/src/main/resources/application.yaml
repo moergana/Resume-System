@@ -11,12 +11,12 @@ spring:
     driver-class-name: com.mysql.jdbc.Driver
     url: jdbc:mysql://127.0.0.1:3306/resume_system?useSSL=false&serverTimezone=UTC
     username: root
-    password: 
+    password: WX040325sql9017
   redis:
     host: 127.0.0.1
     port: 6379
     database: 1
-    password: 
+    password: wangxin123
     lettuce:
       pool:
         max-active: 10
@@ -29,9 +29,9 @@ spring:
   rabbitmq:
     host: localhost
     port: 5672
-    username: 
-    password: 
-    virtual-host: 
+    username: resumesys
+    password: resume123
+    virtual-host: /resumesys
     listener:
       simple:
         default-requeue-rejected: false   # 消费异常时拒绝消息，并且不重新入队列
@@ -56,5 +56,5 @@ jwt:
 
 file:
   # user.dir为当前项目根路径
-  resume_save_path: ${user.dir}/resumes   # 简历文件保存路径
-  jd_save_path: ${user.dir}/jds           # JD文件保存路径
+  resume_save_path: ${user.dir}/resumes   # 简历文件保存路径，保存在项目根目录下的resumes目录内
+  jd_save_path: ${user.dir}/jds           # JD文件保存路径，保存在项目根目录下的jds目录内

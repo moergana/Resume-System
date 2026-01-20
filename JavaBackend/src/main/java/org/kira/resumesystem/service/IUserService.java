@@ -9,4 +9,14 @@ public interface IUserService extends IService<User> {
     Result login(UserDTO userDTO);
 
     Result register(UserDTO userDTO);
+
+    Result sendResetPasswordEmailCode(UserDTO userDTO);
+
+    Result resetPassword(UserDTO userDTO);
+
+    Result modifyEmail(UserDTO userDTO);
+
+    Result sendModifyEmailCode(UserDTO userDTO);
+
+    Result sendRegisterEmailCode(UserDTO userDTO);
 }

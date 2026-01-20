@@ -58,7 +58,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, Resume> impleme
      * @return Result 包含所有简历列表的结果对象
      */
     @Override
-    public Result listAllJDs() {
+    public Result listAllResumes() {
         log.info("Listing all resumes in the system.");
         List<ResumeDTO> resumeList = lambdaQuery()
                 .select(
@@ -133,6 +133,8 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, Resume> impleme
         log.info("Listing resumes on page {}, page size {}", pageNum, pageSize);
         // 创建Page分页对象
         Page<Resume> page = new Page<>(pageNum, pageSize);
+        // 将当前用户的ID设置到过滤条件中，确保只查询该用户的简历
+        filterCondition.setUserId(UserThreadLocal.get());
         // 使用Mapper中自定义的分页查询方法，传入分页对象和过滤条件
         baseMapper.selectResumesByCondition(page, filterCondition);
         // 将查询得到的Resume对象列表转换为ResumeDTO对象列表

@@ -6,6 +6,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.io.InputStream;
 import java.security.*;
@@ -15,6 +17,21 @@ import java.security.*;
 @EnableConfigurationProperties(value = {JwtProperties.class})
 public class SecurityConfig {
 
+    /**
+     * 密码编码器，用于对用户密码进行加密存储和验证，采用 “BCrypt 哈希算法 + 加盐” 实现加密
+     * @return PasswordEncoder
+     */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * 从 JKS 密钥库中加载公私钥对
+     * @param properties JwtProperties 配置属性
+     * @param resourceLoader 资源加载器
+     * @return KeyPair 包含公钥和私钥
+     */
     @Bean
     public KeyPair keyPair(JwtProperties properties,
                            ResourceLoader resourceLoader) {

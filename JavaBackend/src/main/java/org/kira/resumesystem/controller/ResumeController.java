@@ -19,9 +19,9 @@ public class ResumeController {
     private final IResumeService resumeService;
 
     @GetMapping("/list-all")
-    public Result listAllJDs() {
+    public Result listAllResumes() {
         log.info("Listing all resumes in the system.");
-        return resumeService.listAllJDs();
+        return resumeService.listAllResumes();
     }
 
     @GetMapping("/list")

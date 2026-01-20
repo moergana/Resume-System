@@ -7,6 +7,7 @@ public class RedisConstants {
     public static final String USER_LOGIN_HASH_ID = "userId";   // 用户登录缓存中用户ID的key
     public static final String USER_LOGIN_HASH_PASSWORD = "password";   // 用户登录缓存中用户密码的key
     public static final String USER_LOGIN_HASH_ROLE = "role";   // 用户登录缓存中用户角色的key
+    public static final String USER_LOGIN_HASH_EMAIL = "email";   // 用户登录缓存中用户邮箱的key
     public static final String USER_LOGIN_HASH_CD = USER_LOGIN_KEY + "cd_flag"; // 用户登录冷却key前缀
     // 用户登录信息缓存的TTL和单位
     public static final Long USER_LOGIN_TTL = 10L;   // 10 分钟
@@ -19,6 +20,13 @@ public class RedisConstants {
     public static final String USER_REGISTER_CD_KEY = "user:register:"; // 防止用户频繁尝试注册重复用户名的冷却key前缀
     public static final Long USER_REGISTER_CD_TTL = 3L;   // 3 秒
     public static final TimeUnit USER_REGISTER_CD_TTL_UNIT = TimeUnit.SECONDS;
+
+    // 邮箱验证码在Redis中的缓存key前缀和TTL
+    public static final String EMAIL_REGISTER_CODE_KEY = "email:register:code:"; // 注册邮箱验证码key前缀
+    public static final String EMAIL_RESET_PASSWORD_CODE_KEY = "email:resetPassword:code:"; // 邮箱验证码key前缀
+    public static final String EMAIL_MODIFY_EMAIL_CODE_KEY = "email:modifyEmail:code:"; // 修改邮箱验证码key前缀
+    public static final Long EMAIL_CODE_TTL = 10L;   // 10 分钟
+    public static final TimeUnit EMAIL_CODE_TTL_UNIT = TimeUnit.MINUTES;
 
     // 通用的空值缓存TTL和单位，防止缓存穿透
     public static final Long COMMON_NULL_TTL = 5L;   // 5 分钟

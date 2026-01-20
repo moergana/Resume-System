@@ -30,7 +30,10 @@ public class MvcConfig implements WebMvcConfigurer {
                 .addPathPatterns("/**")     // 拦截所有请求路径
                 .excludePathPatterns(       // 排除不需要认证的路径
                         "/user/login",
-                        "/user/register"
+                        "/user/register",
+                        "/user/register/emailCode",
+                        "/user/resetPassword",
+                        "/user/resetPassword/emailCode"
                 );
     }
 

@@ -39,6 +39,12 @@ public class User {
     private Integer role;
 
     /**
+     * 用户账号绑定的邮箱，用于重新设置密码等功能
+     */
+    @TableField("email")
+    private String email;
+
+    /**
      * 创建时间
      */
     @TableField("create_time")
