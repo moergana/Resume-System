@@ -8,8 +8,178 @@ import { formatDate, formatToISO } from "@/utils/tools.js";
 const router = useRouter()
 const user = ref({
   username: '',
-  role: ''
+  role: '',
+  email: ''
 })
+
+// Email domains
+const emailDomains = ['@qq.com', '@163.com', '@gmail.com', '@outlook.com', '@yahoo.com']
+
+// Change Email State
+const showChangeEmailDialog = ref(false)
+const changeEmailForm = ref({
+  emailLocal: '',
+  emailDomain: '@qq.com',
+  emailCode: ''
+})
+const changeEmailValid = ref(false)
+const changeEmailLoading = ref(false)
+
+// Reset Password State (Logged In)
+const showResetPasswordDialog = ref(false)
+const resetPasswordForm = ref({
+  emailLocal: '',
+  emailDomain: '@qq.com',
+  emailCode: '',
+  password: '',
+  confirmPassword: ''
+})
+const resetPasswordValid = ref(false)
+const resetPasswordLoading = ref(false)
+
+const modifyEmailCountdown = ref(0)
+const resetPasswordCountdown = ref(0)
+let modifyEmailTimer = null
+let resetPasswordTimer = null
+
+const showResetPassword = ref(false)
+const showResetConfirmPassword = ref(false)
+
+const startModifyEmailCountdown = () => {
+    modifyEmailCountdown.value = 60
+    if (modifyEmailTimer) clearInterval(modifyEmailTimer)
+    modifyEmailTimer = setInterval(() => {
+        modifyEmailCountdown.value--
+        if (modifyEmailCountdown.value <= 0) {
+            clearInterval(modifyEmailTimer)
+        }
+    }, 1000)
+}
+
+const startResetPasswordCountdown = () => {
+    resetPasswordCountdown.value = 60
+    if (resetPasswordTimer) clearInterval(resetPasswordTimer)
+    resetPasswordTimer = setInterval(() => {
+        resetPasswordCountdown.value--
+        if (resetPasswordCountdown.value <= 0) {
+            clearInterval(resetPasswordTimer)
+        }
+    }, 1000)
+}
+
+// Validation rules
+const rules = {
+  required: value => !!value || '此项必填',
+  matchPassword: value => value === resetPasswordForm.value.password || '密码不一致'
+}
+
+const sendEmailCode = async (emailLocal, emailDomain, type = 'reset') => {
+  // Check proper countdown based on type
+  if (type === 'reset' && resetPasswordCountdown.value > 0) return
+  if (type === 'modify' && modifyEmailCountdown.value > 0) return
+
+  if (!emailLocal) {
+    showSnackbar('请输入邮箱前缀', 'warning')
+    return
+  }
+  const email = `${emailLocal}${emailDomain}`
+
+  if (type === 'reset'){
+    startResetPasswordCountdown()
+  }
+  else if (type === 'modify') {
+    startModifyEmailCountdown()
+  }
+
+  try {
+    let url = '/user/resetPassword/emailCode' // Default to reset password
+    if (type === 'modify') {
+      url = '/user/modifyEmail/emailCode'
+    } else if (type === 'reset') {
+       url = '/user/resetPassword/emailCode'
+    }
+    const res = await request.post(url, { email })
+    if (res.code === 200) {
+      showSnackbar(res.message || '验证码已发送', 'success')
+    } else {
+      showSnackbar(res.message || '发送失败', 'error')
+    }
+  } catch (error) {
+    showSnackbar('发送请求失败', 'error')
+  }
+}
+
+const handleChangeEmail = async () => {
+    changeEmailLoading.value = true
+    try {
+        const payload = {
+             email: `${changeEmailForm.value.emailLocal}${changeEmailForm.value.emailDomain}`,
+             emailCode: changeEmailForm.value.emailCode
+        }
+
+        const res = await request.post('/user/modifyEmail', payload)
+
+        if (res.code === 200) {
+             showSnackbar('邮箱修改成功', 'success')
+             user.value.email = payload.email
+             localStorage.setItem('currentUser', JSON.stringify(user.value))
+             showChangeEmailDialog.value = false
+        } else {
+             showSnackbar(res.message || '修改失败', 'error')
+        }
+    } catch (e) {
+        showSnackbar('请求失败', 'error')
+    } finally {
+        changeEmailLoading.value = false
+    }
+}
+
+const handleResetPasswordLoggedIn = async () => {
+     if (resetPasswordForm.value.password !== resetPasswordForm.value.confirmPassword) return
+
+     resetPasswordLoading.value = true
+     try {
+        const payload = {
+            password: resetPasswordForm.value.password,
+            email: `${resetPasswordForm.value.emailLocal}${resetPasswordForm.value.emailDomain}`,
+            emailCode: resetPasswordForm.value.emailCode
+        }
+        const res = await request.post('/user/resetPassword', payload)
+        if (res.code === 200) {
+             showSnackbar('密码重置成功', 'success')
+             showResetPasswordDialog.value = false
+        } else {
+             showSnackbar(res.message || '重置失败', 'error')
+        }
+    } catch (error) {
+        showSnackbar('请求失败', 'error')
+    } finally {
+        resetPasswordLoading.value = false
+    }
+}
+
+const openChangeEmailDialog = () => {
+    // Pre-fill if current email exists
+    if (user.value.email) {
+        const parts = user.value.email.split('@')
+        if (parts.length === 2) {
+             changeEmailForm.value.emailLocal = parts[0]
+             changeEmailForm.value.emailDomain = '@' + parts[1]
+        }
+    }
+    showChangeEmailDialog.value = true
+}
+
+const openResetPasswordDialog = () => {
+    if (user.value.email) {
+        const parts = user.value.email.split('@')
+        if (parts.length === 2) {
+             resetPasswordForm.value.emailLocal = parts[0]
+             resetPasswordForm.value.emailDomain = '@' + parts[1]
+        }
+    }
+    showResetPasswordDialog.value = true
+}
 
 // Resume data for Candidate
 const resumeList = ref([])
@@ -18,6 +188,11 @@ const showUploadDialog = ref(false)
 const uploadFile = ref(null)
 const uploading = ref(false)
 const snackbar_messages = ref([])
+
+// Helper for snackbar
+const showSnackbar = (text, color) => {
+    snackbar_messages.value.push({ text, color, timeout: 3000 })
+}
 
 // Resume Pagination
 const page = ref(1)
@@ -282,7 +457,7 @@ const jdFormSalaryInput = ref({
     max: '',
     period: '月'
 })
-const jdFormSalaryError = ref(false)
+// const jdFormSalaryError = ref(false)
 
 // REMOVED filteredJdList computed property
 
@@ -934,7 +1109,7 @@ const openChatBot = () => {
       <v-spacer></v-spacer>
 
       <div class="mr-4">
-        <v-menu min-width="200px" rounded>
+        <v-menu min-width="200px" rounded :close-on-content-click="false">
           <template v-slot:activator="{ props }">
             <v-btn
               icon
@@ -953,12 +1128,21 @@ const openChatBot = () => {
                     {{ user.username ? user.username.charAt(0).toUpperCase() : '' }}
                   </span>
                 </v-avatar>
-                <h3 class="mt-2 text-h6">
+                <h3 class="mt-2 text-h5">
                   {{ user.username }}
                 </h3>
-                <p class="text-caption mt-1 text-medium-emphasis">
+                <p class="mt-1 text-medium-emphasis text-body-1">
                   身份：{{ ROLE_MAP.get(user.role) }}
                 </p>
+                <p class="mt-1 text-medium-emphasis text-body-1" v-if="user.email">
+                  邮箱：{{ user.email }}
+                </p>
+
+                <div class="d-flex justify-space-around mt-2 flex-wrap gap-2">
+                    <v-btn size="default" variant="text" color="primary" @click="openChangeEmailDialog">修改邮箱</v-btn>
+                    <v-btn size="default" variant="text" color="primary" @click="openResetPasswordDialog">重置密码</v-btn>
+                </div>
+
                 <v-divider class="my-3"></v-divider>
                 <v-btn
                   color="error"
@@ -1816,6 +2000,151 @@ const openChatBot = () => {
              <p>暂无内容！施工中...</p>
           </v-card>
         </template>
+
+        <!-- Change Email Dialog -->
+        <v-dialog v-model="showChangeEmailDialog" max-width="400">
+           <v-card>
+             <v-card-title class="text-h6 pa-4">修改绑定邮箱</v-card-title>
+             <v-card-text class="pa-4">
+               <v-form v-model="changeEmailValid" @submit.prevent="handleChangeEmail">
+                   <v-row dense>
+                      <v-col cols="7">
+                          <v-text-field
+                              v-model="changeEmailForm.emailLocal"
+                              label="邮箱"
+                              variant="outlined"
+                              density="compact"
+                              :rules="[rules.required]"
+                          ></v-text-field>
+                      </v-col>
+                      <v-col cols="5">
+                          <v-select
+                              v-model="changeEmailForm.emailDomain"
+                              :items="emailDomains"
+                              variant="outlined"
+                              density="compact"
+                              hide-details
+                          ></v-select>
+                      </v-col>
+                   </v-row>
+
+                   <v-row dense class="align-center">
+                       <v-col cols="7">
+                           <v-text-field
+                               v-model="changeEmailForm.emailCode"
+                               label="邮箱验证码"
+                               variant="outlined"
+                               density="compact"
+                               hide-details="auto"
+                               single-line
+                               :rules="[rules.required]"
+                           ></v-text-field>
+                       </v-col>
+                       <v-col cols="5">
+                           <v-btn
+                               color="info"
+                               variant="elevated"
+                               block
+                               :disabled="modifyEmailCountdown > 0"
+                               @click="sendEmailCode(changeEmailForm.emailLocal, changeEmailForm.emailDomain, 'modify')"
+                           >
+                             {{ modifyEmailCountdown > 0 ? `${modifyEmailCountdown}s` : '发送验证码' }}
+                           </v-btn>
+                       </v-col>
+                   </v-row>
+               </v-form>
+             </v-card-text>
+             <v-card-actions class="pa-4 justify-end">
+                <v-btn color="grey-darken-1" variant="text" @click="showChangeEmailDialog = false">取消</v-btn>
+                <v-btn color="primary" variant="flat" :loading="changeEmailLoading" :disabled="!changeEmailValid" @click="handleChangeEmail">确认</v-btn>
+             </v-card-actions>
+           </v-card>
+        </v-dialog>
+
+        <!-- Reset Password Dialog (LoggedIn) -->
+        <v-dialog v-model="showResetPasswordDialog" max-width="400">
+           <v-card>
+             <v-card-title class="text-h6 pa-4">重置密码</v-card-title>
+             <v-card-text class="pa-4">
+               <v-row dense>
+                  <v-col cols="7">
+                      <v-text-field
+                          v-model="resetPasswordForm.emailLocal"
+                          label="邮箱"
+                          variant="outlined"
+                          density="compact"
+                          :rules="[rules.required]"
+                      ></v-text-field>
+                  </v-col>
+                  <v-col cols="5">
+                      <v-select
+                          v-model="resetPasswordForm.emailDomain"
+                          :items="emailDomains"
+                          variant="outlined"
+                          density="compact"
+                          hide-details
+                          bg-color="grey-lighten-4"
+                      ></v-select>
+                  </v-col>
+               </v-row>
+
+               <v-row dense class="align-center">
+                   <v-col cols="7">
+                       <v-text-field
+                           v-model="resetPasswordForm.emailCode"
+                           label="邮箱验证码"
+                           variant="outlined"
+                           density="compact"
+                           hide-details="auto"
+                           single-line
+                           :rules="[rules.required]"
+                       ></v-text-field>
+                   </v-col>
+                   <v-col cols="5">
+                       <v-btn
+                           color="info"
+                           variant="elevated"
+                           block
+                           :disabled="resetPasswordCountdown > 0"
+                           @click="sendEmailCode(resetPasswordForm.emailLocal, resetPasswordForm.emailDomain, 'reset')"
+                       >
+                         {{ resetPasswordCountdown > 0 ? `${resetPasswordCountdown}s` : '发送验证码' }}
+                       </v-btn>
+                   </v-col>
+               </v-row>
+
+               <v-text-field
+                   v-model="resetPasswordForm.password"
+                   label="新密码"
+                   prepend-inner-icon="mdi-lock"
+                   variant="outlined"
+                   clearable
+                   :type="showResetPassword ? 'text' : 'password'"
+                   :append-inner-icon ="showResetPassword ? 'mdi-eye' : 'mdi-eye-off'"
+                   @click:append-inner="showResetPassword = !showResetPassword"
+                   :rules="[rules.required]"
+                   class="mb-2 mt-2"
+               ></v-text-field>
+
+               <v-text-field
+                   v-model="resetPasswordForm.confirmPassword"
+                   label="确认密码"
+                   prepend-inner-icon="mdi-lock"
+                   variant="outlined"
+                   clearable
+                   :type="showResetConfirmPassword ? 'text' : 'password'"
+                   :append-inner-icon ="showResetConfirmPassword ? 'mdi-eye' : 'mdi-eye-off'"
+                   @click:append-inner="showResetConfirmPassword = !showResetConfirmPassword"
+                   :rules="[rules.required, rules.matchPassword]"
+                   class="mb-2"
+               ></v-text-field>
+             </v-card-text>
+             <v-card-actions class="pa-4 justify-end">
+                <v-btn color="grey-darken-1" variant="text" @click="showResetPasswordDialog = false">取消</v-btn>
+                <v-btn color="primary" variant="flat" :loading="resetPasswordLoading" :disabled="!resetPasswordValid" @click="handleResetPasswordLoggedIn">确认</v-btn>
+             </v-card-actions>
+           </v-card>
+        </v-dialog>
 
       </v-container>
     </v-main>
