@@ -3,6 +3,7 @@ package org.kira.resumesystem.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.kira.resumesystem.entity.dto.FilterCondition;
 import org.kira.resumesystem.entity.dto.Result;
+import org.kira.resumesystem.entity.dto.ResumeAnalysisDTO;
 import org.kira.resumesystem.entity.po.ResumeAnalysis;
 import org.kira.resumesystem.entity.vo.ResumeAnalysisVO;
 
@@ -13,6 +14,10 @@ public interface IResumeAnalysisService extends IService<ResumeAnalysis> {
 
     Result pageListResumeAnalysis(Integer pageNum, Integer pageSize, FilterCondition filterCondition);
 
+    Result pageListUserResumeAnalysis(Integer pageNum, Integer pageSize, FilterCondition filterCondition);
+
+    Result pageListAllResumeAnalysis(Integer pageNum, Integer pageSize, FilterCondition filterCondition);
+
     List<ResumeAnalysisVO> convertResumeAnalysisListToVOList(List<ResumeAnalysis> analysisList);
 
     Result getResumeAnalysisById(Long id);
@@ -20,6 +25,8 @@ public interface IResumeAnalysisService extends IService<ResumeAnalysis> {
     Result getResumeAnalysisVOById(Long id);
 
     Result getResumeJdDiffer(Long resumeId, Long jdId);
+
+    void HandleAnalyseRequest(ResumeAnalysisDTO resumeAnalysisDTO, String ExchangeName, String RoutingKey);
 
     Result getResumeAdvice(Long resumeId, Long jdId);
 

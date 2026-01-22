@@ -18,24 +18,56 @@ import org.springframework.web.multipart.MultipartFile;
 public class JDController {
     private final IJDService jdService;
 
+    /**
+     * 获取系统中所有的JD信息
+     * 注意：该方法不进行分页，可能会返回大量数据
+     * @return JD列表
+     */
     @GetMapping("/list-all")
     public Result listAllJDs() {
         log.info("Listing all JDs in the system.");
         return jdService.listAllJDs();
     }
 
+    /**
+     * 获取当前登录用户的所有JD信息
+     * 注意：该方法不进行分页，可能会返回大量数据
+     * @return JD列表
+     */
     @GetMapping("/list")
     public Result listJDs() {
         log.info("Listing all JDs of the current login user.");
         return jdService.listJDs();
     }
 
+    /**
+     * 分页当前用户的JD信息
+     * @param page 页码
+     * @param size 每页大小
+     * @param filterCondition 过滤条件
+     * @return 分页的JD列表
+     */
     @PostMapping("/list/page")
     public Result listJDsByPage(@RequestParam("page") Integer page,
                                 @RequestParam("size") Integer size,
                                 @RequestBody FilterCondition filterCondition) {
-        log.info("Listing JDs on page: {}, size: {}", page, size);
-        return jdService.pageListJDs(page, size, filterCondition);
+        log.info("Listing current user's JDs on page: {}, size: {}", page, size);
+        return jdService.pageListUserJDs(page, size, filterCondition);
+    }
+
+    /**
+     * 分页获取系统中所有的JD信息
+     * @param page 页码
+     * @param size 每页大小
+     * @param filterCondition 过滤条件
+     * @return 分页的JD列表
+     */
+    @PostMapping("/list-all/page")
+    public Result listAllJDsByPage(@RequestParam("page") Integer page,
+                                   @RequestParam("size") Integer size,
+                                   @RequestBody FilterCondition filterCondition) {
+        log.info("Listing all JDs on page: {}, size: {}", page, size);
+        return jdService.pageListAllJDs(page, size, filterCondition);
     }
 
     @GetMapping("/{id}")

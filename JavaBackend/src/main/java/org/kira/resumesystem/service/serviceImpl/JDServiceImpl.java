@@ -13,6 +13,7 @@ import org.kira.resumesystem.exceptions.DbException;
 import org.kira.resumesystem.exceptions.FileException;
 import org.kira.resumesystem.mapper.JDMapper;
 import org.kira.resumesystem.service.IJDService;
+import org.kira.resumesystem.utils.RedisCuckooFilterTool;
 import org.kira.resumesystem.utils.UserThreadLocal;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -48,6 +50,39 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
     private final FileProperties fileProperties;
     private final StringRedisTemplate stringRedisTemplate;
     private final RabbitTemplate rabbitTemplate;
+    private final RedisCuckooFilterTool redisCuckooFilterTool;
+
+    @PostConstruct
+    public void initCuckooFilter() {
+        // 初始化JD Cuckoo Filter
+        log.info("Initializing JD Cuckoo Filter...");
+        boolean reserved = false;
+        try {
+            reserved = redisCuckooFilterTool.reserve(JD_CUCKOO_FILTER_KEY, JD_CUCKOO_FILTER_CAPACITY);
+        } catch (Exception e) {
+            // 由于redisCuckooFilterTool.reserve内部判断如果是该key已存在导致异常，则不抛出
+            // 所以如果捕获到异常，则需要将该异常继续抛出
+            log.error("Failed to initialize JD Cuckoo Filter: {}", e.getMessage());
+            throw e;
+        }
+        if (reserved) {
+            log.info("Initialized JD Cuckoo Filter successfully with key: {}, capacity {}.", JD_CUCKOO_FILTER_KEY, JD_CUCKOO_FILTER_CAPACITY);
+        } else {
+            log.info("JD Cuckoo Filter (key: {}) already exists.", JD_CUCKOO_FILTER_KEY);
+            return;
+        }
+        log.info("Adding existing JD IDs into JD Cuckoo Filter ...");
+        List<String> idList = lambdaQuery()
+                .select(JD::getId)
+                .list()
+                .stream()
+                .map(
+                    jd -> String.valueOf(jd.getId())
+                )
+                .collect(Collectors.toList());
+        redisCuckooFilterTool.batchAdd(JD_CUCKOO_FILTER_KEY, idList);
+        log.info("Added existing JD IDs into Resume Cuckoo Filter successfully.");
+    }
 
     public String getJdName(JD jd) {
         String name = getOriginalFileName(jd.getFilePath());
@@ -135,7 +170,8 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
     }
 
     /**
-     * 分页列出职位描述（JD）
+     * 分页查询职位描述（JD）
+     * （查询全部或者某用户的JD，取决于筛选条件filterCondition中的userId是否为null）
      * 注意：该方法不会返回JD的完整信息，只返回部分属性以供列表展示
      * 需要查询数据库的属性包括：id, userId, title, company, location, salary, file_path, createTime, updateTime
      * @param pageNum 页码
@@ -147,8 +183,6 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
         log.info("Listing JDs at page {}, page size: {}", pageNum, pageSize);
         // 创建Page分页对象
         Page<JD> page = new Page<>(pageNum, pageSize);
-        // 将当前登录用户ID设置到过滤条件中，确保只查询该用户的JD
-        filterCondition.setUserId(UserThreadLocal.get());
         // 使用Mapper中自定义的分页查询方法，传入分页对象和过滤条件
         baseMapper.selectJDsByCondition(page, filterCondition);
         // 将查询得到的JD对象列表转换为JDDTO对象列表
@@ -172,6 +206,34 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
         }
         log.info("Found {} JDs on page {}, page size {}.", jdDTOList.size(), pageNum, pageSize);
         return Result.success("JDs found successfully " + "on page " + pageNum + ", page size "+ pageSize + ".", pageResult);
+    }
+
+    /**
+     * 分页查询当前用户的职位描述（JD）
+     * @param pageNum 页码
+     * @param pageSize 每页大小
+     * @param filterCondition 筛选条件
+     * @return Result 包含职位描述列表的结果对象
+     */
+    @Override
+    public Result pageListUserJDs(Integer pageNum, Integer pageSize, FilterCondition filterCondition) {
+        log.info("Listing current user's JDs at page {}, page size: {}", pageNum, pageSize);
+        // 将当前用户ID设置到筛选条件中
+        filterCondition.setUserId(UserThreadLocal.get());
+        return pageListJDs(pageNum, pageSize, filterCondition);
+    }
+
+    /**
+     * 分页查询系统中所有的职位描述（JD）
+     * @param pageNum 页码
+     * @param pageSize 每页大小
+     * @param filterCondition 筛选条件
+     * @return Result 包含职位描述列表的结果对象
+     */
+    @Override
+    public Result pageListAllJDs(Integer pageNum, Integer pageSize, FilterCondition filterCondition) {
+        log.info("Listing all user's JDs at page {}, page size: {}", pageNum, pageSize);
+        return pageListJDs(pageNum, pageSize, filterCondition);
     }
 
     /**

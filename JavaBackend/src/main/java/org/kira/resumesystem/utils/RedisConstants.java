@@ -55,4 +55,16 @@ public class RedisConstants {
 
     // Bucket4j-redis相关的Redis常量
     public static final String BUCKET4J_KEY_PREFIX = "rate_limit:bucket4j:"; // Bucket4j限流key前缀
+
+    // Cuckoo Filter（布谷鸟过滤器）相关的Redis常量
+    public static final String CUCKOO_FILTER_KEY_PREFIX = "cuckoo_filter:"; // Cuckoo Filter key前缀
+    public static final String RESUME_CUCKOO_FILTER_KEY = CUCKOO_FILTER_KEY_PREFIX + "resume"; // 用于存储简历ID的Cuckoo Filter key
+    public static final String JD_CUCKOO_FILTER_KEY = CUCKOO_FILTER_KEY_PREFIX + "jd"; // 用于存储JD ID的Cuckoo Filter key
+    public static final String RESUME_ANALYSIS_CUCKOO_FILTER_KEY = CUCKOO_FILTER_KEY_PREFIX + "resume_analysis"; // 用于存储简历分析ID的Cuckoo Filter key
+    public static final Long RESUME_CUCKOO_FILTER_CAPACITY = 1000000L; // 简历Cuckoo Filter初始容量
+    public static final Long JD_CUCKOO_FILTER_CAPACITY = 1000000L; // JD Cuckoo Filter初始容量
+    public static final Long RESUME_ANALYSIS_CUCKOO_FILTER_CAPACITY = 3000000L; // 简历分析Cuckoo Filter初始容量
+    public static final Long CUCKOO_FILTER_BUCKETSIZE = 4L;
+    public static final Long CUCKOO_FILTER_MAXITERATIONS = 20L;
+    public static final Long CUCKOO_FILTER_EXPANSION = 1L;
 }

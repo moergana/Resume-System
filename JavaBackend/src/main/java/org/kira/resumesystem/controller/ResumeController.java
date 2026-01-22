@@ -18,24 +18,56 @@ import org.springframework.web.multipart.MultipartFile;
 public class ResumeController {
     private final IResumeService resumeService;
 
+    /**
+     * 获取系统中所有的简历信息
+     * 注意：该方法不进行分页，可能会返回大量数据
+     * @return 简历列表
+     */
     @GetMapping("/list-all")
     public Result listAllResumes() {
         log.info("Listing all resumes in the system.");
         return resumeService.listAllResumes();
     }
 
+    /**
+     * 获取当前登录用户的所有简历信息
+     * 注意：该方法不进行分页，可能会返回大量数据
+     * @return 简历列表
+     */
     @GetMapping("/list")
     public Result listResumes() {
         log.info("Listing all resumes of the current login user.");
         return resumeService.listResumes();
     }
 
+    /**
+     * 分页当前用户的简历信息
+     * @param page 页码
+     * @param size 每页大小
+     * @param filterCondition 过滤条件
+     * @return 分页的简历列表
+     */
     @PostMapping("/list/page")
     public Result listResumesByPage(@RequestParam("page") Integer page,
                                     @RequestParam("size") Integer size,
                                     @RequestBody FilterCondition filterCondition) {
-        log.info("Listing resumes on page: {}, size: {}", page, size);
-        return resumeService.pageListResumes(page, size, filterCondition);
+        log.info("Listing current user's resumes on page: {}, size: {}", page, size);
+        return resumeService.pageListUserResumes(page, size, filterCondition);
+    }
+
+    /**
+     * 分页获取系统中所有的简历信息
+     * @param page 页码
+     * @param size 每页大小
+     * @param filterCondition 过滤条件
+     * @return 分页的简历列表
+     */
+    @PostMapping("/list-all/page")
+    public Result listAllResumesByPage(@RequestParam("page") Integer page,
+                                       @RequestParam("size") Integer size,
+                                       @RequestBody FilterCondition filterCondition) {
+        log.info("Listing all resumes in the system on page: {}, size: {}", page, size);
+        return resumeService.pageListAllResumes(page, size, filterCondition);
     }
 
     @GetMapping("/{id}")

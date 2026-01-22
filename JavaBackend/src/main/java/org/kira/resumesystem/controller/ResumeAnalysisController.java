@@ -14,6 +14,11 @@ import org.springframework.web.bind.annotation.*;
 public class ResumeAnalysisController {
     private final IResumeAnalysisService IResumeAnalysisService;
 
+    /**
+     * 获取当前登录用户的所有简历分析记录
+     * 注意：该方法不进行分页，可能会返回大量数据
+     * @return 简历分析记录列表
+     */
     @GetMapping("/list")
     public Result listResumeAnalysis() {
         log.info("Listing all resume analysis records of the current login user.");
@@ -26,12 +31,19 @@ public class ResumeAnalysisController {
         return IResumeAnalysisService.getResumeAnalysisVOById(id);
     }
 
+    /**
+     * 分页获取当前用户的简历分析记录
+     * @param page 页码
+     * @param size 每页大小
+     * @param filterCondition 过滤条件
+     * @return 分页的简历分析记录
+     */
     @PostMapping("/list/page")
     public Result listResumeAnalysisByPage(@RequestParam("page") Integer page,
                                            @RequestParam("size") Integer size,
                                            @RequestBody FilterCondition filterCondition) {
-        log.info("Listing resume analysis records on page: {}, size: {}", page, size);
-        return IResumeAnalysisService.pageListResumeAnalysis(page, size, filterCondition);
+        log.info("Listing current user's resume analysis records on page: {}, size: {}", page, size);
+        return IResumeAnalysisService.pageListUserResumeAnalysis(page, size, filterCondition);
     }
 
     @DeleteMapping("/{id}")

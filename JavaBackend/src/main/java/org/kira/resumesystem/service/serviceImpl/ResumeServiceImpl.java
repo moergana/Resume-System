@@ -2,7 +2,6 @@ package org.kira.resumesystem.service.serviceImpl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +13,7 @@ import org.kira.resumesystem.exceptions.DbException;
 import org.kira.resumesystem.exceptions.FileException;
 import org.kira.resumesystem.mapper.ResumeMapper;
 import org.kira.resumesystem.service.IResumeService;
+import org.kira.resumesystem.utils.RedisCuckooFilterTool;
 import org.kira.resumesystem.utils.UserThreadLocal;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -50,6 +51,39 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, Resume> impleme
     private final FileProperties fileProperties;
     private final StringRedisTemplate stringRedisTemplate;
     private final RabbitTemplate rabbitTemplate;
+    private final RedisCuckooFilterTool redisCuckooFilterTool;
+
+    @PostConstruct
+    public void initCuckooFilter() {
+        // 初始化Resume Cuckoo Filter
+        log.info("Initializing Resume Cuckoo Filter ...");
+        boolean reserved = false;
+        try {
+            reserved = redisCuckooFilterTool.reserve(RESUME_CUCKOO_FILTER_KEY, RESUME_CUCKOO_FILTER_CAPACITY);
+        } catch (Exception e) {
+            // 由于redisCuckooFilterTool.reserve内部判断如果是该key已存在导致异常，则不抛出
+            // 所以如果捕获到异常，则需要将该异常继续抛出
+            log.error("Failed to initialize Resume Cuckoo Filter: {}", e.getMessage());
+            throw e;
+        }
+        if (reserved) {
+            log.info("Initialized Resume Cuckoo Filter successfully with key: {}, capacity {}.", RESUME_CUCKOO_FILTER_KEY, RESUME_CUCKOO_FILTER_CAPACITY);
+        } else {
+            log.info("Resume Cuckoo Filter (key: {}) already exists.", RESUME_CUCKOO_FILTER_KEY);
+            return;
+        }
+        log.info("Adding existing Resume IDs into Resume Cuckoo Filter ...");
+        List<String> idList = lambdaQuery()
+                .select(Resume::getId)
+                .list()
+                .stream()
+                .map(
+                    resume -> String.valueOf(resume.getId())
+                )
+                .collect(Collectors.toList());
+        redisCuckooFilterTool.batchAdd(RESUME_CUCKOO_FILTER_KEY, idList);
+        log.info("Added all existing Resume IDs into Resume Cuckoo Filter successfully.");
+    }
 
     /**
      * 列出系统中所有用户的所有简历
@@ -121,7 +155,8 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, Resume> impleme
     }
 
     /**
-     * 分页列出所有用户的简历
+     * 分页查询简历
+     * （查询全部或者某用户的简历，取决于筛选条件filterCondition中的userId是否为null）
      * 注意：该方法不会返回Resume记录的所有属性，只返回用于前端显示的必要属性
      * 需要查询数据库的属性包括：id, userId, file_path, createTime, updateTime
      * @param pageNum 页码
@@ -133,8 +168,6 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, Resume> impleme
         log.info("Listing resumes on page {}, page size {}", pageNum, pageSize);
         // 创建Page分页对象
         Page<Resume> page = new Page<>(pageNum, pageSize);
-        // 将当前用户的ID设置到过滤条件中，确保只查询该用户的简历
-        filterCondition.setUserId(UserThreadLocal.get());
         // 使用Mapper中自定义的分页查询方法，传入分页对象和过滤条件
         baseMapper.selectResumesByCondition(page, filterCondition);
         // 将查询得到的Resume对象列表转换为ResumeDTO对象列表
@@ -159,6 +192,34 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, Resume> impleme
         }
         log.info("Found {} Resumes on page {}, page size {}", resumeDTOList.size(), pageNum, pageSize);
         return Result.success("Resumes found successfully " + "on page " + pageNum + ", page size "+ pageSize + ".", pageResult);
+    }
+
+    /**
+     * 分页查询当前用户的简历
+     * @param pageNum 页码
+     * @param pageSize 每页大小
+     * @param filterCondition 筛选条件
+     * @return Result 包含简历列表的结果对象
+     */
+    @Override
+    public Result pageListUserResumes(Integer pageNum, Integer pageSize, FilterCondition filterCondition) {
+        log.info("Listing current user's resumes on page {}, page size {}", pageNum, pageSize);
+        // 将当前用户ID设置到筛选条件中
+        filterCondition.setUserId(UserThreadLocal.get());
+        return pageListResumes(pageNum, pageSize, filterCondition);
+    }
+
+    /**
+     * 分页查询系统中所有用户的简历
+     * @param pageNum 页码
+     * @param pageSize 每页大小
+     * @param filterCondition 筛选条件
+     * @return Result 包含简历列表的结果对象
+     */
+    @Override
+    public Result pageListAllResumes(Integer pageNum, Integer pageSize, FilterCondition filterCondition) {
+        log.info("Listing all users' resumes on page {}, page size {}", pageNum, pageSize);
+        return pageListResumes(pageNum, pageSize, filterCondition);
     }
 
     /**

@@ -80,6 +80,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                 User user = new User().setId(userId).setUsername(username).setRole(cachedRole);
                 String newToken = jwtTool.createToken(user);
                 UserDTO responseDTO = new UserDTO()
+                        .setId(userId)
                         .setUsername(username)
                         .setToken(newToken)
                         .setRole(role)
@@ -134,6 +135,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         // 生成新的jwt token，返回给前端保存
         String newToken = jwtTool.createToken(user);
         UserDTO responseDTO = new UserDTO()
+                .setId(userId)
                 .setUsername(username)
                 .setRole(role)
                 .setToken(newToken)
@@ -232,6 +234,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         // 生成登录的jwt token，返回给前端保存
         String token = jwtTool.createToken(newUser);
         UserDTO responseDTO = new UserDTO()
+                .setId(newUser.getId())
                 .setUsername(userDTO.getUsername())
                 .setToken(token)
                 .setRole(userDTO.getRole())

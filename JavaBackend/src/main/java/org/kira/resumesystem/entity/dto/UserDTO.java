@@ -11,6 +11,11 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor
 public class UserDTO {
     /**
+     * 用户ID
+     */
+    private Long id = 0L;
+
+    /**
      * 用户名
      */
     private String username = "";

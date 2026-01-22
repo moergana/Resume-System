@@ -14,6 +14,10 @@ public interface IJDService extends IService<JD> {
 
     Result pageListJDs(Integer pageNum, Integer pageSize, FilterCondition filterCondition);
 
+    Result pageListUserJDs(Integer pageNum, Integer pageSize, FilterCondition filterCondition);
+
+    Result pageListAllJDs(Integer pageNum, Integer pageSize, FilterCondition filterCondition);
+
     Result getJDById(Long id);
 
     Result getJDDTOById(Long id);

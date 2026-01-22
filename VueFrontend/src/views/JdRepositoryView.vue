@@ -136,7 +136,7 @@ const fetchAllJds = async () => {
         endUpdateTime: (timeFilter.value.active && timeFilter.value.target === 'updateTime') ? (timeFilter.value.end ? formatToISO(timeFilter.value.end) : null) : null,
     }
 
-    const res = await request.post('/jd/list/page', filter, {
+    const res = await request.post('/jd/list-all/page', filter, {
       params: { page: page.value, size: size.value }
     })
     if (res.code === 200) {

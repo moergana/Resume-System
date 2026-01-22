@@ -15,6 +15,10 @@ public interface IResumeService extends IService<Resume> {
 
     Result pageListResumes(Integer pageNum, Integer pageSize, FilterCondition filterCondition);
 
+    Result pageListUserResumes(Integer pageNum, Integer pageSize, FilterCondition filterCondition);
+
+    Result pageListAllResumes(Integer pageNum, Integer pageSize, FilterCondition filterCondition);
+
     Result getResumeById(Long id);
 
     Result getResumeDTOById(Long id);

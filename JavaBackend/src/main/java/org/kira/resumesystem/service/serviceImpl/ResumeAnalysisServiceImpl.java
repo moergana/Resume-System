@@ -17,12 +17,14 @@ import org.kira.resumesystem.mapper.ResumeAnalysisMapper;
 import org.kira.resumesystem.mapper.ResumeAnalysisVOMapper;
 import org.kira.resumesystem.service.IResumeAnalysisService;
 import org.kira.resumesystem.utils.FileTool;
+import org.kira.resumesystem.utils.RedisCuckooFilterTool;
 import org.kira.resumesystem.utils.UserThreadLocal;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -41,6 +43,38 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
     private final StringRedisTemplate stringRedisTemplate;
     private final RabbitTemplate rabbitTemplate;
     private final ResumeAnalysisVOMapper resumeAnalysisVOMapper;
+    private final RedisCuckooFilterTool redisCuckooFilterTool;
+
+    @PostConstruct
+    public void initCuckooFilter() {
+        // 初始化Resume Analysis Cuckoo Filter
+        log.info("Initializing Resume Analysis Cuckoo Filter...");
+        boolean reserved = false;
+        try {
+            reserved = redisCuckooFilterTool.reserve(RESUME_ANALYSIS_CUCKOO_FILTER_KEY, RESUME_ANALYSIS_CUCKOO_FILTER_CAPACITY);
+        } catch (Exception e) {
+            // 由于redisCuckooFilterTool.reserve内部判断如果是该key已存在导致异常，则不抛出
+            // 所以如果捕获到异常，则需要将该异常继续抛出
+            log.error("Failed to initialize Resume Analysis Cuckoo Filter. Error: {}", e.getMessage());
+            throw e;
+        }
+        if (reserved) {
+            log.info("Initialized Resume Analysis Cuckoo Filter successfully with key: {}, capacity {}.", RESUME_ANALYSIS_CUCKOO_FILTER_KEY, RESUME_ANALYSIS_CUCKOO_FILTER_CAPACITY);
+        } else {
+            log.info("Resume Analysis Cuckoo Filter (key: {}) already exists.", RESUME_ANALYSIS_CUCKOO_FILTER_KEY);
+            return;
+        }
+        log.info("Adding existing Resume Analysis IDs into Resume Analysis Cuckoo Filter ...");
+        List<String> idList = lambdaQuery()
+                .select(ResumeAnalysis::getId)
+                .list()
+                .stream()
+                .map(
+                    resumeAnalysis -> String.valueOf(resumeAnalysis.getId())
+                ).collect(Collectors.toList());
+        redisCuckooFilterTool.batchAdd(RESUME_ANALYSIS_CUCKOO_FILTER_KEY, idList);
+        log.info("Added existing Resume Analysis IDs into Resume Analysis Cuckoo Filter successfully.");
+    }
 
 
     /**
@@ -82,7 +116,8 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
     }
 
     /**
-     * 分页查询当前登录用户的简历分析记录
+     * 分页查询简历分析记录
+     * （查询全部或者某用户的分析记录，根据筛选条件filterCondition中的userId是否为null）
      * @param pageNum 页码（第几页）
      * @param pageSize 页面大小（每页的记录数）
      * @return 结果对象，包含简历分析记录列表
@@ -93,8 +128,6 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
         log.info("Listing resume analysis records for User ID {} on page {}, page size {}.", UserThreadLocal.get(), pageNum, pageSize);
         // 1. 首先要获取当前登录的用户ID
         Long userId = UserThreadLocal.get();
-        // 将userId作为查询条件的一部分
-        filterCondition.setUserId(userId);
         // 2. 查询该用户的所有简历分析记录
         Page<ResumeAnalysisVO> page = new Page<>(pageNum, pageSize);
         resumeAnalysisVOMapper.selectResumeAnalysisVOByCondition(page, filterCondition);
@@ -126,6 +159,34 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
         }
         log.info("Successfully retrieved {} resume analysis records for User ID {} on page {}, page size {}.", resumeAnalysisVOList.size(), userId, pageNum, pageSize);
         return Result.success("Successfully get resume analysis records of the current login user on page " + pageNum + ", page size "+ pageSize + ".", pageResult);
+    }
+
+    /**
+     * 分页查询当前登录用户的简历分析记录
+     * @param pageNum 页码
+     * @param pageSize 页面大小
+     * @param filterCondition 筛选条件
+     * @return 结果对象，包含简历分析记录列表
+     */
+    @Override
+    public Result pageListUserResumeAnalysis(Integer pageNum, Integer pageSize, FilterCondition filterCondition) {
+        log.info("Listing current user's resume analysis records on page {}, page size {}.", pageNum, pageSize);
+        // 将当前登录用户ID设置到filterCondition中
+        filterCondition.setUserId(UserThreadLocal.get());
+        return pageListResumeAnalysis(pageNum, pageSize, filterCondition);
+    }
+
+    /**
+     * 分页查询所有用户的简历分析记录
+     * @param pageNum 页码
+     * @param pageSize 页面大小
+     * @param filterCondition 筛选条件
+     * @return 结果对象，包含简历分析记录列表
+     */
+    @Override
+    public Result pageListAllResumeAnalysis(Integer pageNum, Integer pageSize, FilterCondition filterCondition) {
+        log.info("Listing all users' resume analysis records on page {}, page size {}.", pageNum, pageSize);
+        return pageListResumeAnalysis(pageNum, pageSize, filterCondition);
     }
 
     /**
@@ -414,7 +475,9 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
         return Result.success("User " + UserThreadLocal.get() +" sent resume-jd difference analysis request successfully.", resumeAnalysisDTO);
     }
 
-    private void HandleAnalyseRequest(ResumeAnalysisDTO resumeAnalysisDTO, String ExchangeName, String RoutingKey) {
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void HandleAnalyseRequest(ResumeAnalysisDTO resumeAnalysisDTO, String ExchangeName, String RoutingKey) {
         // 将resumeAnalysisDTO对象转化为ResumeAnalysis对象，保存初始状态到数据库中
         try {
             log.info("Trying saving initial resume analysis record to database for User ID: {}, Resume ID: {}, JD ID: {}, Request Type: {}...",

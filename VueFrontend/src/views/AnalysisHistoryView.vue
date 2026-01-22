@@ -143,6 +143,7 @@ const fetchHistory = async () => {
   try {
     const filter = {
         id: searchId.value ? parseInt(searchId.value) : null,
+        userId: null,   // 不需要前端传递当前用户的id，后端会根据token自动获取
         resumeKeyword: searchResumeKeyword.value || null,
         jdKeyword: searchJdKeyword.value || null,
         requestType: filterRequestTypes.value.length > 0 ? filterRequestTypes.value : null,

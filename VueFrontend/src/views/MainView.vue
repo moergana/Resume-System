@@ -473,7 +473,7 @@ const fetchPublishedJds = async () => {
              // min_salary, max_salary, period -> jdSalaryFilter
              // start/end -> jdTimeFilter
              id: searchJdId.value ? parseInt(searchJdId.value) : null,
-             userId: user.value.id || null, // Filter by my own JDs
+             userId: null,    // 不需要前端传递用户id，后端会根据token获取
              jdKeyword: searchJdKeyword.value || null,
              min_salary: jdSalaryFilter.value.active ? parseFloat(jdSalaryFilter.value.min) : null,
              max_salary: jdSalaryFilter.value.active ? parseFloat(jdSalaryFilter.value.max) : null,
@@ -662,6 +662,9 @@ const selectJd = (item) => {
     }
 }
 
+/*
+ * 跳转简历仓库
+ */
 const openResumeRepository = () => {
     const route = router.resolve({ name: 'resume-repository' })
     window.open(route.href, '_blank')
@@ -748,7 +751,7 @@ const fetchResumes = async () => {
   try {
     const filter = {
         resumeKeyword: searchResumeName.value || null,
-        userId: user.value.id || null, // Assuming user.value has id
+        userId: null, // 不需要前端传递用户id，后端会根据token获取
         startCreateTime: (timeFilter.value.active && timeFilter.value.target === 'createTime') ? formatToISO(timeFilter.value.start) : null,
         endCreateTime: (timeFilter.value.active && timeFilter.value.target === 'createTime') ? formatToISO(timeFilter.value.end) : null,
         startUpdateTime: (timeFilter.value.active && timeFilter.value.target === 'updateTime') ? formatToISO(timeFilter.value.start) : null,
@@ -1499,7 +1502,7 @@ const openChatBot = () => {
                     class="text-primary text-decoration-underline"
                     @click.prevent="openJdRepository"
                   >
-                    不知道ID？逛逛JD仓库！
+                    查看JD仓库
                   </a>
                 </div>
               </v-card-text>
@@ -1900,7 +1903,9 @@ const openChatBot = () => {
                      variant="outlined"
                   ></v-text-field>
                   <div class="mt-2 text-right">
-                    <a href="#" class="text-primary text-decoration-underline" @click.prevent="openResumeRepository">查询简历仓库</a>
+                    <a href="#" class="text-primary text-decoration-underline" @click.prevent="openResumeRepository">
+                      查询简历仓库
+                    </a>
                   </div>
                </v-card-text>
                <v-card-actions class="pa-4 justify-end">

@@ -10,7 +10,7 @@
     </parent>
     <groupId>org.kira</groupId>
     <artifactId>ResumeSystem</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
     <name>ResumeSystem</name>
     <description>ResumeSystem</description>
     <url/>
@@ -61,6 +61,7 @@
         <dependency>
             <groupId>io.lettuce</groupId>
             <artifactId>lettuce-core</artifactId>
+            <!-- old version: 6.1.6.RELEASE -->
             <version>6.1.6.RELEASE</version>
         </dependency>
         <dependency>
@@ -125,10 +126,12 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <!-- thymeleaf，可以将 HTML 模板与 Java 后端数据结合渲染为动态网页 -->
+        <!--
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
+        -->
         <!-- Bucket4j 令牌桶限流库（bucket4j-core为bucket4j的老版本依赖，不推荐使用） -->
         <!--<dependency>
             <groupId>com.bucket4j</groupId>

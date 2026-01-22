@@ -78,7 +78,7 @@ const fetchAllResumes = async () => {
         endUpdateTime: (timeFilter.value.active && timeFilter.value.target === 'updateTime') ? (timeFilter.value.end ? formatToISO(timeFilter.value.end) : null) : null,
     }
 
-    const res = await request.post('/resume/list/page', filter, {
+    const res = await request.post('/resume/list-all/page', filter, {
       params: { page: page.value, size: size.value }
     })
     if (res.code === 200) {
