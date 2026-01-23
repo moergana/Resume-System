@@ -169,7 +169,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, Resume> impleme
         // 创建Page分页对象
         Page<Resume> page = new Page<>(pageNum, pageSize);
         // 使用Mapper中自定义的分页查询方法，传入分页对象和过滤条件
-        baseMapper.selectResumesByCondition(page, filterCondition);
+        baseMapper.pageSelectResumesByCondition(page, filterCondition);
         // 将查询得到的Resume对象列表转换为ResumeDTO对象列表
         List<ResumeDTO> resumeDTOList = page.getRecords().stream()
                 .map(resume -> {

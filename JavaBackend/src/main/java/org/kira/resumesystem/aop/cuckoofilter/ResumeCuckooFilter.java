@@ -21,7 +21,7 @@ import static org.kira.resumesystem.utils.RedisConstants.RESUME_CUCKOO_FILTER_KE
 public class ResumeCuckooFilter {
     private final RedisCuckooFilterTool redisCuckooFilterTool;
 
-    @Pointcut("execution(* org.kira.resumesystem.service.serviceImpl.ResumeServiceImpl.getResumeById(..))")
+    @Pointcut("execution(* org.kira.resumesystem.service.serviceImpl.ResumeServiceImpl.getResume*ById(..))")
     public void getPointcut() {}
 
 
@@ -34,12 +34,13 @@ public class ResumeCuckooFilter {
 
 
     @Around("getPointcut()")
-    public Object aroundGet(ProceedingJoinPoint joinPoint) throws Throwable {
-        Object[] args = joinPoint.getArgs();
+    public Object aroundGet(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
+        Object[] args = proceedingJoinPoint.getArgs();
         Long id = (Long) args[0];
         String resumeId = String.valueOf(id);
         if (redisCuckooFilterTool.exists(RESUME_CUCKOO_FILTER_KEY, resumeId)) {
-            return joinPoint.proceed();
+            log.info("Resume ID {} found in Cuckoo Filter, proceeding with redis and database query.", id);
+            return proceedingJoinPoint.proceed();
         } else {
             log.info("Resume ID {} not found in Cuckoo Filter, skipping redis and database query.", id);
             return Result.fail("Resume not found.");
@@ -48,14 +49,15 @@ public class ResumeCuckooFilter {
 
     @Around("addPointcut()")
     @Transactional(rollbackFor = Exception.class)
-    public Object aroundAdd(ProceedingJoinPoint joinPoint) throws Throwable {
-        Object proceedResult = joinPoint.proceed();
+    public Object aroundAdd(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
+        Object proceedResult = proceedingJoinPoint.proceed();
         Result result = (Result) proceedResult;
         if (result.getCode() == 200) {
             Object data = result.getData();
             ResumeDTO resumeDTO = (ResumeDTO) data;
             Long id = resumeDTO.getId();
             String resumeId = String.valueOf(id);
+            log.info("Adding Resume ID {} to Resume Cuckoo Filter.", id);
             boolean addnxed = redisCuckooFilterTool.addnx(RESUME_CUCKOO_FILTER_KEY, resumeId);
             if (addnxed) {
                 log.info("Added Resume ID {} to Cuckoo Filter after upload.", id);
@@ -72,13 +74,14 @@ public class ResumeCuckooFilter {
 
     @Around("deletePointcut()")
     @Transactional(rollbackFor = Exception.class)
-    public Object aroundDelete(ProceedingJoinPoint joinPoint) throws Throwable {
-        Object[] args = joinPoint.getArgs();
+    public Object aroundDelete(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
+        Object[] args = proceedingJoinPoint.getArgs();
         Long id = (Long) args[0];
         String resumeId = String.valueOf(id);
-        Object proceedResult = joinPoint.proceed();
+        Object proceedResult = proceedingJoinPoint.proceed();
         Result result = (Result) proceedResult;
         if (result.getCode() == 200) {
+            log.info("Deleting Resume ID {} from Resume Cuckoo Filter.", id);
             boolean deleted = redisCuckooFilterTool.delete(RESUME_CUCKOO_FILTER_KEY, resumeId);
             if (deleted) {
                 log.info("Deleted Resume ID {} from Cuckoo Filter after resume deletion.", id);

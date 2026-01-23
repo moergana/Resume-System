@@ -184,7 +184,7 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
         // 创建Page分页对象
         Page<JD> page = new Page<>(pageNum, pageSize);
         // 使用Mapper中自定义的分页查询方法，传入分页对象和过滤条件
-        baseMapper.selectJDsByCondition(page, filterCondition);
+        baseMapper.pageSelectJDsByCondition(page, filterCondition);
         // 将查询得到的JD对象列表转换为JDDTO对象列表
         List<JDDTO> jdDTOList = page.getRecords().stream().map(jd -> {
             JDDTO dto = new JDDTO();

@@ -21,11 +21,11 @@ import static org.kira.resumesystem.utils.RedisConstants.RESUME_ANALYSIS_CUCKOO_
 public class ResumeAnalysisCuckooFilter {
     private final RedisCuckooFilterTool redisCuckooFilterTool;
 
-    @Pointcut("execution(* org.kira.resumesystem.service.serviceImpl.ResumeAnalysisServiceImpl.getResumeAnalysisById(..))")
+    @Pointcut("execution(* org.kira.resumesystem.service.serviceImpl.ResumeAnalysisServiceImpl.getResumeAnalysis*ById(..))")
     public void getPointcut() {}
 
 
-    @Pointcut("execution(* org.kira.resumesystem.service.serviceImpl.ResumeAnalysisServiceImpl.HandleAnalyseRequest(..))")
+    @Pointcut("execution(* org.kira.resumesystem.service.serviceImpl.ResumeAnalysisServiceImpl.generate*(..))")
     public void addPointcut() {}
 
 
@@ -38,6 +38,7 @@ public class ResumeAnalysisCuckooFilter {
         Long id = (Long) args[0];
         String analysisId = String.valueOf(id);
         if (redisCuckooFilterTool.exists(RESUME_ANALYSIS_CUCKOO_FILTER_KEY, analysisId)) {
+            log.info("Resume Analysis ID {} found in Cuckoo Filter, proceeding with redis and database query.", id);
             return proceedingJoinPoint.proceed();
         } else {
             log.info("Resume Analysis ID {} not found in Cuckoo Filter, skipping redis and database query.", id);
@@ -51,12 +52,18 @@ public class ResumeAnalysisCuckooFilter {
         Object[] args = proceedingJoinPoint.getArgs();
         ResumeAnalysisDTO resumeAnalysisDTO = (ResumeAnalysisDTO) args[0];
         Object proceedResult = proceedingJoinPoint.proceed();
-        boolean added = redisCuckooFilterTool.addnx(RESUME_ANALYSIS_CUCKOO_FILTER_KEY, String.valueOf(resumeAnalysisDTO.getId()));
-        if (added) {
-            log.info("Successfully added Resume Analysis ID {} to Cuckoo Filter.", resumeAnalysisDTO.getId());
-        } else {
-            log.error("Failed to add Resume Analysis ID {} to Cuckoo Filter.", resumeAnalysisDTO.getId());
-            throw new RuntimeException("Failed to add Resume Analysis ID to Cuckoo Filter.");
+        Result result = (Result) proceedResult;
+        if (result.getCode() != 200) {
+            boolean added = redisCuckooFilterTool.addnx(RESUME_ANALYSIS_CUCKOO_FILTER_KEY, String.valueOf(resumeAnalysisDTO.getId()));
+            if (added) {
+                log.info("Successfully added Resume Analysis ID {} to Cuckoo Filter.", resumeAnalysisDTO.getId());
+            } else {
+                log.error("Failed to add Resume Analysis ID {} to Cuckoo Filter.", resumeAnalysisDTO.getId());
+                throw new RuntimeException("Failed to add Resume Analysis ID to Cuckoo Filter.");
+            }
+        }
+        else {
+            log.info("Resume Analysis request generated failed, not adding to Cuckoo Filter.");
         }
         return proceedResult;
     }

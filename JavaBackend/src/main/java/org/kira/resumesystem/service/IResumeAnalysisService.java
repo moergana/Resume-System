@@ -22,17 +22,19 @@ public interface IResumeAnalysisService extends IService<ResumeAnalysis> {
 
     Result getResumeAnalysisById(Long id);
 
+    Result getResumeAnalysisById_UserId(Long id, Long userId);
+
     Result getResumeAnalysisVOById(Long id);
 
-    Result getResumeJdDiffer(Long resumeId, Long jdId);
+    Result generateResumeJdDiffer(Long resumeId, Long jdId);
 
     void HandleAnalyseRequest(ResumeAnalysisDTO resumeAnalysisDTO, String ExchangeName, String RoutingKey);
 
-    Result getResumeAdvice(Long resumeId, Long jdId);
+    Result generateResumeAdvice(Long resumeId, Long jdId);
 
-    Result getJDMatch(Long resumeId);
+    Result generateJDMatch(Long resumeId);
 
-    Result getResumeMatch(Long jdId);
+    Result generateResumeMatch(Long jdId);
 
     Result deleteResumeAnalysisById(Long id);
 }

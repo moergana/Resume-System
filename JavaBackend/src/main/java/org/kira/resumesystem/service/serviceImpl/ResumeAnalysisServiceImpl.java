@@ -130,7 +130,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
         Long userId = UserThreadLocal.get();
         // 2. 查询该用户的所有简历分析记录
         Page<ResumeAnalysisVO> page = new Page<>(pageNum, pageSize);
-        resumeAnalysisVOMapper.selectResumeAnalysisVOByCondition(page, filterCondition);
+        resumeAnalysisVOMapper.pageSelectResumeAnalysisVOByCondition(page, filterCondition);
         List<ResumeAnalysisVO> resumeAnalysisVOList = page.getRecords().stream()
                 .map(resumeAnalysisVO -> {
                     // 将保存在VO的resumeName和jdName字段中的文件路径转换为原始文件名
@@ -292,7 +292,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
      */
     @Override
     public Result getResumeAnalysisById(Long id) {
-        // 获取当前用户的指定ID的简历分析记录
+        // 获取指定ID的简历分析记录
         // 1. 首先构造简历分析记录id在Redis中的缓存key，然后尝试从Redis中获取缓存的ResumeAnalysis对象
         String redisKey = RESUME_ANALYSIS_KEY + id;
         String resumeAnalysisJSON = stringRedisTemplate.opsForValue().get(redisKey);
@@ -330,6 +330,56 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
     }
 
     /**
+     * 获取指定ID且属于指定用户的简历分析记录在数据库中的全部信息
+     * @param id 简历分析记录ID
+     * @param userId 用户ID
+     * @return 结果对象，包含简历分析记录，类型为ResumeAnalysis
+     */
+    @Override
+    public Result getResumeAnalysisById_UserId(Long id, Long userId) {
+        // 获取当前用户的指定ID的简历分析记录
+        // 1. 首先构造简历分析记录id在Redis中的缓存key，然后尝试从Redis中获取缓存的ResumeAnalysis对象
+        String redisKey = RESUME_ANALYSIS_KEY + id;
+        String resumeAnalysisJSON = stringRedisTemplate.opsForValue().get(redisKey);
+        ResumeAnalysis resumeAnalysis;
+        if (resumeAnalysisJSON != null && !resumeAnalysisJSON.isEmpty()) {
+            // 2. 如果Redis中存在该缓存，判断该缓存的ResumeAnalysis对象的userId是否与传入的userId匹配
+            resumeAnalysis = JSONUtil.toBean(resumeAnalysisJSON, ResumeAnalysis.class);
+            if (!resumeAnalysis.getUserId().equals(userId)) {
+                log.info("Resume analysis record with ID {} does not belong to User ID {}.", id, userId);
+                return Result.fail("Resume analysis record not found.");
+            }
+            log.info("Found resume analysis record in Redis cache with key {}.", redisKey);
+        }
+        else if (resumeAnalysisJSON != null) {
+            // 3. 如果Redis中存在该缓存但值为空字符串，则说明该记录不存在，命中了空缓存，直接返回失败结果
+            log.info("Resume analysis record not found in Redis cache with key: {} (NULL cache hit).", redisKey);
+            // 刷新空缓存的过期时间
+            stringRedisTemplate.expire(redisKey, COMMON_NULL_TTL, COMMON_NULL_TTL_UNIT);
+            return Result.fail("Resume analysis record not found.");
+        }
+        else {
+            // 4. 如果Redis中不存在该缓存，则查询数据库获取ResumeAnalysis对象
+            resumeAnalysis = lambdaQuery()
+                    .eq(ResumeAnalysis::getId, id)
+                    .eq(ResumeAnalysis::getUserId, userId)
+                    .one();
+        }
+        if (resumeAnalysis == null) {
+            // 5. 如果数据库中也不存在该记录，则返回失败结果
+            log.info("Resume analysis record not found in database with ID {}, userId {}.", id, userId);
+            // 为防止缓存穿透，写入空缓存到Redis，并设置较短的过期时间
+            stringRedisTemplate.opsForValue().set(redisKey, "", COMMON_NULL_TTL, COMMON_NULL_TTL_UNIT);
+            return Result.fail("Resume analysis record not found.");
+        }
+        log.info("Successfully get resume analysis record with ID {}, userId {}.", id, userId);
+        // 4. 将resumeAnalysis对象缓存到Redis中，并设置适当的过期时间
+        String resumeAnalysisToCache = JSONUtil.toJsonStr(resumeAnalysis);
+        stringRedisTemplate.opsForValue().set(redisKey, resumeAnalysisToCache, RESUME_ANALYSIS_TTL, RESUME_ANALYSIS_TTL_UNIT);
+        return Result.success("Successfully get resume analysis record with ID: " + id + ".", resumeAnalysis);
+    }
+
+    /**
      * 获取指定ID的简历分析记录的展示给前端的全部信息
      * @param id 简历分析记录ID
      * @return 结果对象，包含简历分析记录，类型为ResumeAnalysisVO
@@ -337,7 +387,8 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
     @Override
     public Result getResumeAnalysisVOById(Long id) {
         // 1. 根据id获取ResumeAnalysis对象
-        Result resumeAnalysisResult = getResumeAnalysisById(id);
+        // 注意：这里暂且只支持获取当前登录用户的简历分析记录
+        Result resumeAnalysisResult = getResumeAnalysisById_UserId(id, UserThreadLocal.get());
         if (resumeAnalysisResult.getData() == null) {
             return Result.fail("Resume analysis record not found.");
         }
@@ -435,7 +486,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Result getResumeJdDiffer(Long resumeId, Long jdId) {
+    public Result generateResumeJdDiffer(Long resumeId, Long jdId) {
         // 该方法需要传递一个简历分析的消息给RabbitMQ，然后由python端进行分析处理
         // 发送的消息体的内容为ResumeAnalysis对象，由Jackson2JsonMessageConverter自动序列化为JSON字符串
 
@@ -526,7 +577,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Result getResumeAdvice(Long resumeId, Long jdId) {
+    public Result generateResumeAdvice(Long resumeId, Long jdId) {
         // 该方法需要传递一个简历分析的消息给RabbitMQ，然后由python端进行分析处理
         // 发送的消息体的内容为ResumeAnalysis对象，由Jackson2JsonMessageConverter自动序列化为JSON字符串
 
@@ -573,7 +624,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
      */
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Result getJDMatch(Long resumeId) {
+    public Result generateJDMatch(Long resumeId) {
         // 构造JD匹配的请求消息，发送给RabbitMQ
         // 1. 首先根据传入的resumeId中查询对应的简历信息
         Result resumeResult = resumeService.getResumeById(resumeId);
@@ -602,7 +653,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Result getResumeMatch(Long jdId) {
+    public Result generateResumeMatch(Long jdId) {
         // 构造简历匹配的请求消息，发送给RabbitMQ
         // 1. 首先从数据库中查询JD信息
         Result jdResult = jdService.getJDById(jdId);

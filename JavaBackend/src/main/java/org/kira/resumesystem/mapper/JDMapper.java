@@ -13,5 +13,5 @@ public interface JDMapper extends BaseMapper<JD> {
      * @param condition 筛选条件
      * @return 分页后的JD列表
      */
-    Page<JD> selectJDsByCondition(Page<JD> page, @Param("condition") FilterCondition condition);
+    Page<JD> pageSelectJDsByCondition(Page<JD> page, @Param("condition") FilterCondition condition);
 }

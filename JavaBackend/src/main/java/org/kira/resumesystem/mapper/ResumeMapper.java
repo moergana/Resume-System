@@ -1,7 +1,6 @@
 package org.kira.resumesystem.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.annotations.Param;
 import org.kira.resumesystem.entity.dto.FilterCondition;
@@ -14,5 +13,5 @@ public interface ResumeMapper extends BaseMapper<Resume> {
      * @param condition 筛选条件
      * @return 分页后的简历列表
      */
-    Page<Resume> selectResumesByCondition(Page<Resume> page, @Param("condition") FilterCondition condition);
+    Page<Resume> pageSelectResumesByCondition(Page<Resume> page, @Param("condition") FilterCondition condition);
 }

@@ -55,24 +55,24 @@ public class ResumeAnalysisController {
     @GetMapping("/resume_jd_differ")
     public Result getResumeJdDiffer(@RequestParam("resume_id") Long resume_id, @RequestParam("jd_id") Long jd_id) {
         log.info("Requesting resume-JD difference analysis for Resume ID: {}, JD ID: {}.", resume_id, jd_id);
-        return IResumeAnalysisService.getResumeJdDiffer(resume_id, jd_id);
+        return IResumeAnalysisService.generateResumeJdDiffer(resume_id, jd_id);
     }
 
     @GetMapping("/resume_advice")
     public Result getResumeAdvice(@RequestParam("resume_id") Long resume_id, @RequestParam("jd_id") Long jd_id) {
         log.info("Requesting resume advice for Resume ID: {}, JD ID: {}.", resume_id, jd_id);
-        return IResumeAnalysisService.getResumeAdvice(resume_id, jd_id);
+        return IResumeAnalysisService.generateResumeAdvice(resume_id, jd_id);
     }
 
     @GetMapping("/jd_match")
     public Result getJDMatch(@RequestParam("resume_id") Long resume_id) {
         log.info("Querying matched JD for resume ID: {}", resume_id);
-        return IResumeAnalysisService.getJDMatch(resume_id);
+        return IResumeAnalysisService.generateJDMatch(resume_id);
     }
 
     @GetMapping("/resume_match")
     public Result getResumeMatch(@RequestParam("jd_id") Long jd_id) {
         log.info("Querying matched resumes for JD ID: {}", jd_id);
-        return IResumeAnalysisService.getResumeMatch(jd_id);
+        return IResumeAnalysisService.generateResumeMatch(jd_id);
     }
 }
