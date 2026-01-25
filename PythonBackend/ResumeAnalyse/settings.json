@@ -2,20 +2,20 @@
   "PostgreSql": {
     "Host": "localhost",
     "Port": 5433,
-    "Database": "",
-    "Username": "",
-    "Password": ""
+    "Database": "resume_system",
+    "Username": "postgres",
+    "Password": "post040325sql"
   },
 
   "Redis": {
     "Host": "localhost",
     "Port": 6379,
-    "Password": "",
+    "Password": "wangxin123",
     "Database": 1,
     "Decode_Responses": true
   },
 
   "Model": {
-    "Embed_Model_Name": ""
+    "Embed_Model_Name": "/root/pretrained_model/Qwen3-Embedding-0.6B"
   }
 }

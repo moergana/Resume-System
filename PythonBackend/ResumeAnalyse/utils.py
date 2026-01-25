@@ -97,8 +97,8 @@ assert dashscope_api_key, "请先在系统环境变量中设置 DASHSCOPE_API_KE
 """
 嵌入模型配置
 """
-# embed_model_name = "Qwen/Qwen3-Embedding-0.6B"
-embed_model_name = "/root/pretrained_model/Qwen3-Embedding-0.6B"
+# example: embed_model_name = "Qwen/Qwen3-Embedding-0.6B"
+embed_model_name = settings["Model"]["Embed_Model_Name"]
 embed_model = HuggingFaceEmbeddings(model_name=embed_model_name)
 
 resume_collection_name = "resume_collection"

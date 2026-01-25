@@ -2,13 +2,13 @@ import threading
 import time
 
 from Conversation import start_bot_interface
-from rabbitmq.listener.JdDeleteListener import create_jd_delete_listener
-from rabbitmq.listener.JDMatchListener import create_jd_match_listener
-from rabbitmq.listener.JDUploadListener import create_jd_upload_listener
-from rabbitmq.listener.ResumeAnalyseListener import create_resume_analyse_listener
-from rabbitmq.listener.ResumeDeleteListener import create_resume_delete_listener
-from rabbitmq.listener.ResumeMatchListener import create_resume_match_listener
-from rabbitmq.listener.ResumeUploadListener import create_resume_upload_listener
+from ResumeAnalyse.rabbitmq.listener.JdDeleteListener import create_jd_delete_listener
+from ResumeAnalyse.rabbitmq.listener.JDMatchListener import create_jd_match_listener
+from ResumeAnalyse.rabbitmq.listener.JDUploadListener import create_jd_upload_listener
+from ResumeAnalyse.rabbitmq.listener.ResumeAnalyseListener import create_resume_analyse_listener
+from ResumeAnalyse.rabbitmq.listener.ResumeDeleteListener import create_resume_delete_listener
+from ResumeAnalyse.rabbitmq.listener.ResumeMatchListener import create_resume_match_listener
+from ResumeAnalyse.rabbitmq.listener.ResumeUploadListener import create_resume_upload_listener
 
 
 def start_all_services():

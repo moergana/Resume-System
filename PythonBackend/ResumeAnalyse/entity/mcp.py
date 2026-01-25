@@ -24,3 +24,11 @@ tongyi_web_parser = {
       "Authorization": f"Bearer {utils.dashscope_api_key}"
     }
 }
+
+jina_web_search_mcp_config = {
+    "transport": "sse",
+    "url": "https://dashscope.aliyuncs.com/api/v1/mcps/jina-ai/sse",
+    "headers": {
+        "Authorization": f"Bearer {utils.dashscope_api_key}"
+    }
+}

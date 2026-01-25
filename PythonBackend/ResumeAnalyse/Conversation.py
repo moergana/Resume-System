@@ -20,6 +20,8 @@ from ResumeAnalyse.entity.thread_local import thread_resume_summary_text, thread
     thread_jd_summary_text, thread_match_score, \
     thread_resume_advice
 from ResumeAnalyse.utils import redis_client
+from ResumeAnalyse.entity.mcp import tongyi_web_search_mcp_config, amap_maps_mcp_config, tongyi_web_parser, \
+    jina_web_search_mcp_config
 
 Model_Name = "mistralai/devstral-2512:free"
 Base_URL = "https://openrouter.ai/api/v1"
@@ -66,13 +68,16 @@ conversation_system_prompt_template = PromptTemplate.from_template(template=
 mcp_client = MultiServerMCPClient(
     {
         # "TongyiWebSearch": tongyi_web_search_mcp_config,
-        # "AmapMaps": amap_maps_mcp_config,
-        # "TongyiWebParser": tongyi_web_parser
+        # "JinaWebSearch": jina_web_search_mcp_config,
+        "AmapMaps": amap_maps_mcp_config,
+        "TongyiWebParser": tongyi_web_parser
     }
 )
 
-# 对话智能体对象（全局变量）
-# conversation_agent: CompiledStateGraph[TypedDict, ContextT, _InputAgentState, TypedDict] = None
+# 全局共享的MCP工具列表，用于初始化多个agent
+global_mcp_tools = None
+# 异步获取MCP工具的任务句柄，避免重复创建任务
+get_tools_task = None
 
 
 class SessionContext(TypedDict):
@@ -103,7 +108,14 @@ async def init_conversation_agent(resume_summary_text: str,
     :param job_hunting_advice: 求职建议
     :return: 包含会话配置的字典
     """
+    global global_mcp_tools
+    global get_tools_task
+    # 如果全局MCP工具列表还没被初始化，就开启一个异步获取MCP工具列表的任务
+    if global_mcp_tools is None:
+        # 注意要判断 get_tools_task 是否为 None，避免重复创建任务
+        get_tools_task = asyncio.create_task(mcp_client.get_tools()) if get_tools_task is None else get_tools_task
 
+    # 根据输入参数，利用system prompt生成对话智能体的系统提示词
     conversation_system_prompt = conversation_system_prompt_template.format(
         resume_summary_text=resume_summary_text,
         jd_summary_text=jd_summary_text,
@@ -113,18 +125,6 @@ async def init_conversation_agent(resume_summary_text: str,
         job_hunting_advice=job_hunting_advice
     )
 
-    agent_tools = []
-    mcp_tools = await mcp_client.get_tools()
-    agent_tools.extend(mcp_tools)
-
-    conversation_agent = create_agent(
-        model=conversation_llm,
-        tools=agent_tools,
-        system_prompt=conversation_system_prompt,
-        # checkpointer=await utils.get_checkpointer(),
-        # store=await utils.get_store()
-    )
-
     # 生成一个会话ID，用于临时会话
     thread_id = str(uuid.uuid4())
     conversation_config = {
@@ -132,6 +132,33 @@ async def init_conversation_agent(resume_summary_text: str,
             "thread_id": thread_id
         }
     }
+
+    # 从之前开启的异步任务中，获取MCP工具
+    agent_tools = []
+    if global_mcp_tools is None:
+        # 尝试从异步任务中获取MCP工具列表
+        # 如果获取失败，则记录错误日志，并继续初始化对话智能体（不使用MCP工具）
+        # 但是不会将空列表记录到global_mcp_tools中，以便后续继续重试获取MCP工具
+        try:
+            mcp_tools = await get_tools_task
+            global_mcp_tools = mcp_tools  # 缓存到全局变量中
+        except Exception as e:
+            logging.error(f"获取MCP工具失败: {e}\n将不使用MCP工具继续初始化对话智能体。")
+            mcp_tools = []
+            # 显式重置任务句柄，确保下一次请求能正确触发新的 create_task
+            get_tools_task = None
+    else:
+        mcp_tools = global_mcp_tools
+    agent_tools.extend(mcp_tools)
+
+    # 创建对话智能体
+    conversation_agent = create_agent(
+        model=conversation_llm,
+        tools=agent_tools,
+        system_prompt=conversation_system_prompt,
+        # checkpointer=await utils.get_checkpointer(),
+        # store=await utils.get_store()
+    )
 
     # 直接返回对象，不再设置 contextvars
     return conversation_agent, conversation_config
@@ -165,10 +192,13 @@ async def invoke_agent_in_background(queue: asyncio.Queue, message: str, convers
 def _message_to_text(msg) -> str:
     """
     尽量稳健地提取 BaseMessage 的文本内容。
+    注意：不要对 content 做 strip 操作！否则会导致空格、换行符、制表符等字符丢失，从而影响输出内容的可读性。
+    :param msg: BaseMessage 对象
+    :return: 提取的文本内容，str类型
     """
     content = getattr(msg, "content", "")
     if isinstance(content, str):
-        return content.strip()
+        return content
     if isinstance(content, list):
         # 兼容多 part 的消息内容
         parts = []
@@ -182,8 +212,8 @@ def _message_to_text(msg) -> str:
                     parts.append(str(p))
             else:
                 parts.append(str(p))
-        return "\n".join(parts).strip()
-    return str(content).strip()
+        return "\n".join(parts)
+    return str(content)
 
 
 async def chat_with_agent(message: str, history: list, request: gradio.Request):
@@ -391,6 +421,8 @@ def start_bot_interface():
         lines=1,  # 初始行数为1行
         max_lines=9,  # 最大行数为9行
         container=False,  # 不使用额外的容器
+        submit_btn=True,    # 提交按钮
+        stop_btn=True,   # 停止按钮
     )
     # --- Gradio 界面 ---
     bot_interface = gradio.ChatInterface(
