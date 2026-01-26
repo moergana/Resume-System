@@ -1,10 +1,9 @@
 import threading
-import time
 
-from Conversation import start_bot_interface
-from ResumeAnalyse.rabbitmq.listener.JdDeleteListener import create_jd_delete_listener
+from ResumeAnalyse.Conversation import start_bot_interface, mcp_clients, mcp_status, init_lock, init_mcp_clients
 from ResumeAnalyse.rabbitmq.listener.JDMatchListener import create_jd_match_listener
 from ResumeAnalyse.rabbitmq.listener.JDUploadListener import create_jd_upload_listener
+from ResumeAnalyse.rabbitmq.listener.JdDeleteListener import create_jd_delete_listener
 from ResumeAnalyse.rabbitmq.listener.ResumeAnalyseListener import create_resume_analyse_listener
 from ResumeAnalyse.rabbitmq.listener.ResumeDeleteListener import create_resume_delete_listener
 from ResumeAnalyse.rabbitmq.listener.ResumeMatchListener import create_resume_match_listener
@@ -40,13 +39,16 @@ def start_all_services():
 1. help: Show all available commands.
 2. stop: Stop all services and exit the program.
 3. task-list: List all running tasks.
+4. check MCP status: Check the status of the MCP service.
 """)
         while True:
             command = input("ResumeSystem> ")
             if command.strip().lower() == 'help':
                 print("""Available commands:
-1. stop: Stop all services and exit the program.
-2. task-list: List all running tasks.
+1. help: Show all available commands.
+2. stop: Stop all services and exit the program.
+3. task-list: List all running tasks.
+4. mcp-status: Check the status of the MCP service.
 """)
 
             elif command.strip().lower() == 'task-list':
@@ -58,6 +60,11 @@ def start_all_services():
             elif command.strip().lower() == 'stop':
                 print("Stopping all services...")
                 break
+
+            elif command.strip().lower() == 'mcp-status':
+                print("MCP Clients Status:")
+                for status in mcp_status.items():
+                    print(f"  Client {status}: {mcp_status[status]}")
 
             else:
                 print("Unknown command. Type 'Help' for all available commands.")

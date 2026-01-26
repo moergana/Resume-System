@@ -32,3 +32,10 @@ jina_web_search_mcp_config = {
         "Authorization": f"Bearer {utils.dashscope_api_key}"
     }
 }
+
+mcp_list = {
+    "amap_maps": amap_maps_mcp_config,
+    # "tongyi_web_search": tongyi_web_search_mcp_config,
+    "tongyi_web_parser": tongyi_web_parser,
+    "jina_web_search": jina_web_search_mcp_config,
+}

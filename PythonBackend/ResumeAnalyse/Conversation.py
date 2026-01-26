@@ -21,7 +21,7 @@ from ResumeAnalyse.entity.thread_local import thread_resume_summary_text, thread
     thread_resume_advice
 from ResumeAnalyse.utils import redis_client
 from ResumeAnalyse.entity.mcp import tongyi_web_search_mcp_config, amap_maps_mcp_config, tongyi_web_parser, \
-    jina_web_search_mcp_config
+    jina_web_search_mcp_config, mcp_list
 
 Model_Name = "mistralai/devstral-2512:free"
 Base_URL = "https://openrouter.ai/api/v1"
@@ -55,7 +55,7 @@ conversation_system_prompt_template = PromptTemplate.from_template(template=
 {jd_summary_text}
 
 3. 用户经过智能简历分析系统，目前得到的分析结果如下：
-简历与职位描述的匹配度分数（百分制。如果是负数则表示分数无效，请忽略它）：{match_score}
+简历与职位描述的匹配度分数（百分制。如果是负数比如-1，则表示分数无效，你不应该将它作为参考并且当用户询问时应该告知用户你没有获取到有效分数）：{match_score}
 简历与职位描述的差异点（如果为空，请忽略该字段）：{differences}
 简历改进建议（如果为空，请忽略该字段）：{resume_advice}
 求职建议（如果为空，请忽略该字段）：{job_hunting_advice}
@@ -64,20 +64,42 @@ conversation_system_prompt_template = PromptTemplate.from_template(template=
 """
 )
 
-# MCP服务配置类，可以选择接入多个MCP工具
-mcp_client = MultiServerMCPClient(
-    {
-        # "TongyiWebSearch": tongyi_web_search_mcp_config,
-        # "JinaWebSearch": jina_web_search_mcp_config,
-        "AmapMaps": amap_maps_mcp_config,
-        "TongyiWebParser": tongyi_web_parser
-    }
-)
+mcp_clients = []    # 全局共享的、成功初始化的MCP客户端列表
+mcp_status = {}     # 全局共享的MCP客户端状态字典
 
+
+def init_mcp_clients():
+    """
+    初始化多个MCP客户端实例，并将它们存入全局列表 mcp_clients 中。
+    """
+    clients = []
+    status = {}
+    for mcp_name in mcp_list:
+        try:
+            client = MultiServerMCPClient(
+                {
+                    mcp_name: mcp_list[mcp_name]
+                }
+            )
+            clients.append(client)
+            status[mcp_name] = "running"
+            logging.info(f"MCP客户端 {mcp_name} 初始化成功。")
+        except Exception as e:
+            logging.error(f"MCP客户端 {mcp_name} 初始化失败: {e}")
+            logging.info(f"智能体将暂时无法使用该MCP工具: {mcp_name}")
+            status[mcp_name] = "failed"
+
+    return clients, status
+
+
+# 初始化MCP客户端
+mcp_clients, mcp_status = init_mcp_clients()
 # 全局共享的MCP工具列表，用于初始化多个agent
 global_mcp_tools = None
 # 异步获取MCP工具的任务句柄，避免重复创建任务
 get_tools_task = None
+# 全局初始化锁，确保并发安全
+init_lock = asyncio.Lock()
 
 
 class SessionContext(TypedDict):
@@ -110,10 +132,23 @@ async def init_conversation_agent(resume_summary_text: str,
     """
     global global_mcp_tools
     global get_tools_task
-    # 如果全局MCP工具列表还没被初始化，就开启一个异步获取MCP工具列表的任务
-    if global_mcp_tools is None:
-        # 注意要判断 get_tools_task 是否为 None，避免重复创建任务
-        get_tools_task = asyncio.create_task(mcp_client.get_tools()) if get_tools_task is None else get_tools_task
+    # 如果全局MCP工具列表还没被初始化，并且也没有其他线程开启获取MCP工具的异步任务，就开启一个异步获取MCP工具列表的任务
+    if global_mcp_tools is None and get_tools_task is None:
+        # 获取初始化锁，确保多协程并发安全
+        async with init_lock:
+            # 双重检查，确保在获取锁期间没有其他线程已经创建了任务
+            if global_mcp_tools is None and get_tools_task is None:
+                get_tools_tasks = []
+                for mcp_client in mcp_clients:
+                    # 注意要判断 get_tools_task 是否为 None，避免重复创建任务
+                    task = asyncio.create_task(mcp_client.get_tools())
+                    if task is not None:
+                        get_tools_tasks.append(task)
+                # 合并所有MCP工具获取任务为一个任务
+                if get_tools_tasks:
+                    get_tools_task = asyncio.gather(*get_tools_tasks, return_exceptions=True)
+                else:
+                    get_tools_task = None
 
     # 根据输入参数，利用system prompt生成对话智能体的系统提示词
     conversation_system_prompt = conversation_system_prompt_template.format(
@@ -140,8 +175,19 @@ async def init_conversation_agent(resume_summary_text: str,
         # 如果获取失败，则记录错误日志，并继续初始化对话智能体（不使用MCP工具）
         # 但是不会将空列表记录到global_mcp_tools中，以便后续继续重试获取MCP工具
         try:
-            mcp_tools = await get_tools_task
-            global_mcp_tools = mcp_tools  # 缓存到全局变量中
+            # 如果 get_tools_task 仍然是 None (说明没有 client)，则跳过 await
+            if get_tools_task:
+                mcp_tool_futures = await get_tools_task
+                mcp_tools = []
+                for future in mcp_tool_futures:
+                    if isinstance(future, Exception):
+                        logging.error(f"获取MCP工具时出现异常: {future}\n将不使用该MCP工具继续初始化对话智能体。")
+                        continue
+                    else:
+                        mcp_tools.extend(future)
+                global_mcp_tools = mcp_tools  # 缓存结果
+            else:
+                mcp_tools = []
         except Exception as e:
             logging.error(f"获取MCP工具失败: {e}\n将不使用MCP工具继续初始化对话智能体。")
             mcp_tools = []
@@ -297,8 +343,8 @@ async def chat_with_agent(message: str, history: list, request: gradio.Request):
     full_response = ""
 
     # 如果你不想占位文本，可以移除下面两行，但务必在结束前确保至少 yield 一次。
-    placeholder = "正在处理，请稍候..."
-    yield placeholder
+    # placeholder = "正在处理，请稍候..."
+    # yield placeholder
     output_once = False
 
     try:
@@ -442,8 +488,15 @@ def start_bot_interface():
     )
     # 注册 unload 事件，该事件在用户关闭标签页时触发，会自动调用传入的回调方法
     bot_interface.unload(cleanup_session_context)
-    # 启动 Gradio 应用，监听所有网络接口
-    bot_interface.launch(server_name="0.0.0.0")
+    try:
+        # 尝试使用端口 7860 启动 Gradio 应用
+        bot_interface.launch(server_name="0.0.0.0", server_port=7860)
+    except Exception as e:
+        logging.error(f"简历分析助手出现异常: {e}\n")
+        raise e
+    finally:
+        # 无论如何都确保执行完毕或异常后关闭服务连接
+        bot_interface.close()
 
 
 if __name__ == "__main__":
