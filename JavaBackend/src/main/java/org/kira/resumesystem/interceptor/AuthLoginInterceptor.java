@@ -51,15 +51,25 @@ public class AuthLoginInterceptor implements HandlerInterceptor {
             log.error("解析Token失败: {}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setHeader("Message", "无效的Token，请重新登录");
+            // 清除可能保存到ThreadLocal中的用户信息
+            UserThreadLocal.remove();
             return false;
         }
         // 4. JWT有效，允许访问
         return true;
     }
 
+    /**
+     * 在请求处理完成后，无论处理成功还是异常，afterCompletion方法都会被调用
+     * （如果是postHandle方法，一旦处理异常就不会被执行，这就存在内存泄漏的风险）
+     * 这里用于清理ThreadLocal中的用户信息，防止内存泄漏
+     */
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         // 清理ThreadLocal中的用户信息，防止内存泄漏
+        // 如果不使用remove清除ThreadLocal对象保存的值，那么当ThreadLocal对象被回收后，内部的值对象不会被回收
+        // 因为ThreadLocal和值这一个键值对Entry，本质是保存在ThreadLocalMap中的，ThreadLocal被回收后就变为null-值的Entry
+        // 由于值对象依旧被强引用，不会被GC回收，这就造成了内存泄漏
         UserThreadLocal.remove();
     }
 }
