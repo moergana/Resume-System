@@ -2,7 +2,8 @@ from pika.adapters.blocking_connection import BlockingConnection
 
 from ResumeAnalyse.rabbitmq.constants import JD_DELETE_QUEUE_NAME
 from ResumeAnalyse.rabbitmq.listener.callback.DeleteCallback import jd_delete_callback
-from ResumeAnalyse.rabbitmq.utils import mq_parameters
+from ResumeAnalyse.rabbitmq.utils import mq_parameters, aio_mq_parameters
+from aio_pika import connect_robust
 
 
 def create_jd_delete_listener():

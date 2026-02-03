@@ -10,7 +10,7 @@ from ResumeAnalyse import utils
 from ResumeAnalyse.entity.advice import Advice
 from ResumeAnalyse.entity.difference import Difference
 
-Model_Name = "mistralai/devstral-2512:free"
+Model_Name = "mistralai/mistral-small-3.1-24b-instruct:free"
 Base_URL = "https://openrouter.ai/api/v1"
 analyser_llm = init_chat_model(
     model=Model_Name,

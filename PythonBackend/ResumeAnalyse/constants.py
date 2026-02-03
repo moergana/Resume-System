@@ -17,13 +17,15 @@ REQUEST_JD_DELETE = "jd_delete"
 RESUME_ANALYSIS_REDIS_KEY_PREFIX = "resume_analysis:chatbot_context:"
 RESUME_ANALYSIS_REDIS_TTL = 7 * 24 * 60 * 60  # 7天，单位为秒
 
+# 聊天机器人（Conversation.py）相关常量
+CONVERSATION_MAX_TOKENS = 20000     # 触发上下文总结压缩的最大历史对话Token数
+CONVERSATION_MAX_DIALOGUES = 8      # 触发上下文总结压缩的最大历史对话轮数
+
 
 def get_resume_analysis_redis_key(analysis_id: int) -> str:
     """
     获取简历分析在Redis中的Key
-    :param user_id: 用户ID
-    :param resume_id: 简历ID
-    :param jd_id: JD ID
+    :param analysis_id: 分析记录ID
     :return: Redis Key
     """
     return f"{RESUME_ANALYSIS_REDIS_KEY_PREFIX}{analysis_id}"

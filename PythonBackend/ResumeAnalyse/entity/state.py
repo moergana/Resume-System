@@ -1,9 +1,12 @@
 # 整个Graph的全局状态
+import asyncio
 from operator import add
-from typing import TypedDict, Annotated, List
+from typing import TypedDict, Annotated, List, Any
 
+from langchain.agents.middleware.types import _InputAgentState
 from langchain_core.messages import BaseMessage
 from langgraph.graph import add_messages
+from langgraph.graph.state import CompiledStateGraph
 
 
 class GraphState(TypedDict):
@@ -30,3 +33,13 @@ class GraphState(TypedDict):
 
     state: str  # 当前Graph的执行状态
     log_msg: Annotated[List[str], add]    # 执行过程中的日志信息
+
+
+class ConversationState(TypedDict):
+    messages: Annotated[List[BaseMessage], add_messages]  # 聊天消息列表
+    max_tokens: int  # 触发上下文总结的阈值，当对话上下文的token数达到该值时，触发总结记忆
+    max_dialogues: int  # 触发上下文总结的阈值，当对话轮数达到该值时，触发总结记忆
+    summary: str  # 对话摘要
+    input: str  # 用户的最新输入内容
+    final_answer: str  # 最终答案
+

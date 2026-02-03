@@ -17,5 +17,13 @@
 
   "Model": {
     "Embed_Model_Name": "/root/pretrained_model/Qwen3-Embedding-0.6B"
+  },
+
+  "RabbitMQ": {
+    "Host": "localhost",
+    "Port": 5672,
+    "Virtual_Host": "/resumesys",
+    "Username": "resumesys",
+    "Password": "resume123"
   }
 }

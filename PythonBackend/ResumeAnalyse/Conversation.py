@@ -2,20 +2,23 @@ import asyncio
 import contextlib
 import logging
 import uuid
-from typing import TypedDict
+from typing import TypedDict, List
 
 import gradio
 from langchain.agents import create_agent
 from langchain.agents.middleware.types import _InputAgentState
 from langchain.chat_models import init_chat_model
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage, BaseMessage, RemoveMessage
 from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnableConfig
 from langchain_mcp_adapters.client import MultiServerMCPClient
-from langgraph.graph.state import CompiledStateGraph
-from langgraph.typing import ContextT
+from langgraph.constants import START, END
+from langgraph.graph.state import CompiledStateGraph, StateGraph
+from langgraph.typing import ContextT, StateT, InputT, OutputT
 
 from ResumeAnalyse import utils
-from ResumeAnalyse.constants import get_resume_analysis_redis_key
+from ResumeAnalyse.constants import get_resume_analysis_redis_key, CONVERSATION_MAX_DIALOGUES, CONVERSATION_MAX_TOKENS
+from ResumeAnalyse.entity.state import ConversationState
 from ResumeAnalyse.entity.thread_local import thread_resume_summary_text, thread_job_hunting_advice, \
     thread_jd_summary_text, thread_match_score, \
     thread_resume_advice
@@ -23,7 +26,7 @@ from ResumeAnalyse.utils import redis_client
 from ResumeAnalyse.entity.mcp import tongyi_web_search_mcp_config, amap_maps_mcp_config, tongyi_web_parser, \
     jina_web_search_mcp_config, mcp_list
 
-Model_Name = "mistralai/devstral-2512:free"
+Model_Name = "openrouter/free"
 Base_URL = "https://openrouter.ai/api/v1"
 conversation_llm = init_chat_model(
     model=Model_Name,
@@ -55,10 +58,11 @@ conversation_system_prompt_template = PromptTemplate.from_template(template=
 {jd_summary_text}
 
 3. 用户经过智能简历分析系统，目前得到的分析结果如下：
-简历与职位描述的匹配度分数（百分制。如果是负数比如-1，则表示分数无效，你不应该将它作为参考并且当用户询问时应该告知用户你没有获取到有效分数）：{match_score}
+简历与职位描述的匹配度分数（百分制。如果是负数比如-1，则表示分数无效）：{match_score}
 简历与职位描述的差异点（如果为空，请忽略该字段）：{differences}
 简历改进建议（如果为空，请忽略该字段）：{resume_advice}
 求职建议（如果为空，请忽略该字段）：{job_hunting_advice}
+**注意：以上出现值为空或者无效的字段的话，这类字段就不具有参考必要，你应当忽略！并在需要时，尝试从对话历史（如果有的话）中获取相关信息！**
 
 接下来的对话过程中，你需要根据以上信息，回答用户提出的问题，并提供有价值的建议和指导。
 """
@@ -115,7 +119,195 @@ conversation_config: 对话智能体的配置字典
 sessions_context_register = {}
 
 
-async def init_conversation_agent(resume_summary_text: str,
+# 总结智能体的系统提示词和PromptTemplate
+summarize_system_prompt = """你是一个强大且专业的总结助手，能够将冗长的文本内容提炼为简洁明了的摘要。
+注意要使用尽可能少的文字，同时又要尽可能保持原文的主旨和关键信息。
+"""
+summarize_prompt = """请将对话内容总结为简洁明了的摘要（注意保留原文主旨和关键信息）。"""
+
+# 总结智能体，用于将过长的上下文进行总结压缩
+summarize_agent = create_agent(
+    model=conversation_llm,
+    tools=[],
+    system_prompt=summarize_system_prompt,
+)
+
+
+def compress_context(context: List[BaseMessage]) -> str:
+    """
+    如果上下文过长，则使用总结智能体进行压缩。
+    :param context: 原始上下文字符串
+    :return: 压缩后的上下文字符串
+    """
+    # 构造新的消息列表用于调用总结智能体，避免修改原始 context 列表
+    invoke_messages = context + [HumanMessage(content=summarize_prompt)]
+    logging.info("总结智能体压缩上下文中...")
+    response = summarize_agent.invoke(
+        input={ "messages": invoke_messages }
+    )
+
+    # 分析 response 的类型，尽量稳健地提取内容
+    if isinstance(response, AIMessage):
+        compressed_context = response.content
+    elif isinstance(response, str):
+        compressed_context = response
+    elif isinstance(response, tuple):
+        msg, meta = response[0], response[1]
+        compressed_context = msg.content
+    else:
+        compressed_context = str(response)
+
+    return compressed_context
+
+
+def manage_context(state: ConversationState, config: RunnableConfig):
+    """
+    管理对话上下文。如果上下文过长，则进行总结压缩。
+    :param state: 当前对话状态
+    :param config: 当前对话配置
+    """
+    logging.info("已进入上下文管理结点...")
+    # 计算当前上下文的长度
+    messages = state.get("messages", [])
+    if len(messages) > 1 and isinstance(messages[-1], HumanMessage):
+        messages_to_compress = messages[:-1]  # 不包括最后一条用户消息
+    elif len(messages) > 2 and isinstance(messages[-1], AIMessage):
+        messages_to_compress = messages[:-2]  # 不包括最后一条AI消息和最后一条用户消息
+    else:
+        messages_to_compress = messages
+
+    if not messages_to_compress:
+        logging.info("当前所需压缩的上下文为空，无需管理。")
+        return {}
+
+    need_compress = False   # 是否需要压缩的标志
+    try:
+        # 计算当前上下文的Token数量
+        context_token_count = conversation_llm.get_num_tokens_from_messages(messages_to_compress)
+        # 获取设定的Token阈值
+        max_tokens = state.get("max_tokens", CONVERSATION_MAX_TOKENS)
+        logging.info(f"当前上下文的Token数量为 {context_token_count}，设定阈值为 {max_tokens}。")
+        if context_token_count >= max_tokens:
+            need_compress = True
+    except Exception as e:
+        logging.error(f"计算上下文Token数量时出现异常: {e}")
+        logging.info(f"将使用对话轮数限制上下文长度。")
+        # 获取设定的对话轮数阈值
+        max_dialogues = state.get("max_dialogues", CONVERSATION_MAX_DIALOGUES)
+        # 如果计算Token数量失败，则使用对话轮数进行限制
+        if len(messages_to_compress) >= 2 * max_dialogues:   # 可压缩的对话轮数超过指定轮数则压缩
+            need_compress = True
+    # 如果上下文过长，超过了设定的token阈值，则进行总结压缩
+    if need_compress:
+        # 上下文过长，进行总结压缩
+        logging.info("上下文过长，开始进行总结压缩...")
+        compressed_context = compress_context(messages_to_compress)
+        logging.info("上下文总结压缩完成。")
+
+        # 使用RemoveMessage清空原有消息，只保留压缩后的摘要作为新的上下文
+        # 注意：RemoveMessage 只会删除指定ID的消息在当前Graph的state中的数据，而不会修改数据库中的记录
+        # 但是这不会导致重启会话加载原本删除的上下文，因为checkpointer加载最后一次保存的状态（checkpoint）时，已经不包含这些消息了
+        remove_messages_id = [RemoveMessage(id=msg.id) for msg in messages_to_compress]
+        new_messages = remove_messages_id + [AIMessage(content=compressed_context)]
+
+        return {
+            "summary": compressed_context,
+            "messages": new_messages
+        }
+    # 上下文未超出阈值，无需压缩，state不需要更新
+    return {}
+
+
+async def call_agent(state: ConversationState, config: RunnableConfig):
+    """
+    调用对话智能体，处理用户输入并生成响应。
+    :param state: 当前对话状态
+    :param config: 当前对话配置
+    :return: 更新后的对话状态
+    """
+    logging.info("已进入调用对话智能体结点...")
+    # 获取agent
+    agent = config.get("configurable", {}).get("chat_agent", None)
+    # 获取消息输出队列
+    queue = config.get("configurable", {}).get("queue", None)
+    if agent is None:
+        raise RuntimeError("对话智能体尚未初始化，请先调用 init_conversation_agent 函数。")
+    if queue is None:
+        raise RuntimeError("消息输出队列尚未初始化，请先确保在 config['configurable'] 中传入了 queue 对象。")
+
+    logging.info("开始调用对话智能体处理用户输入...")
+    # 流式调用agent，将输出的chunk放入队列
+    try:
+        # 将state中的上下文和用户新的输入拼接成一个列表
+        history_messages = state.get("messages", "")
+        user_input = state.get("input", "")
+        input_messages = history_messages + [HumanMessage(content=user_input)]
+        final_answer = ""
+        # 使用拼接而成的消息列表调用agent
+        # 这里调用没有传入 config，不需要agent内部记忆上下文，上下文由外部的Graph管理，通过state传入
+        async for chunk in agent.astream(
+            input={
+                "messages": input_messages
+            },
+            stream_mode="messages"
+        ):
+            await queue.put(chunk)
+            # 逐步构建最终答案
+            if isinstance(chunk, (list, tuple)):
+                msg, meta = chunk[0], chunk[1]
+                if (not isinstance(meta, dict)) or (not isinstance(msg, AIMessage)):
+                    continue
+                final_answer += msg.content
+
+        # 返回最终答案
+        return {
+            "messages": [AIMessage(content=final_answer)],
+            "final_answer": final_answer
+        }
+
+    except Exception as e:
+        logging.error(f"call_agent结点出现异常: {e}")
+        raise e
+
+
+"""
+定义对话Graph，实现可持久化且上下文长度可控的对话工作流。
+结点manage_context用于管理上下文长度，结点call_agent用于调用对话智能体。
+"""
+conversation_graph = StateGraph(state_schema=ConversationState)
+
+# 结点定义
+conversation_graph.add_node("manage_context", manage_context)
+conversation_graph.add_node("call_agent", call_agent)
+
+# 边定义
+conversation_graph.add_edge(START, "manage_context")
+conversation_graph.add_edge("manage_context", "call_agent")
+conversation_graph.add_edge("call_agent", END)
+
+# 全局的对话Graph执行器实例，采用懒加载的方式初始化
+conversation_graph_executor: CompiledStateGraph[StateT, ContextT, InputT, OutputT] = None
+
+
+async def init_graph_executor():
+    """
+    获取对话Graph的执行器实例，采用懒加载的方式。
+    :return: Conversation Graph的执行器实例
+    """
+    global conversation_graph_executor
+    # 获取初始化锁，确保多协程并发安全
+    async with init_lock:
+        # 双重检查，确保在获取锁期间没有其他线程已经初始化了executor
+        if conversation_graph_executor is None:
+            # 使用定义好的 conversation_graph 编译执行器，传入 checkpointer 以实现对话状态持久化
+            conversation_graph_executor = conversation_graph.compile(
+                checkpointer=await utils.get_pooled_checkpointer(),
+            )
+            logging.info("Conversation Graph Executor 初始化完成。")
+
+
+async def init_conversation_agent(thread_id: str,
+                                  resume_summary_text: str,
                                   jd_summary_text: str,
                                   match_score: int,
                                   differences: str,
@@ -123,12 +315,18 @@ async def init_conversation_agent(resume_summary_text: str,
                                   job_hunting_advice: str):
     """
     初始化对话智能体，并创建一个临时会话的config
+    :param thread_id: 会话ID。用于保存和加载与agent会话的上下文。
     :param resume_summary_text: 简历摘要文本
     :param jd_summary_text: 职位描述摘要文本
+    :param differences: 简历与职位描述的差异点
     :param match_score: 匹配度分数
     :param improvement_suggestions: 简历改进建议
     :param job_hunting_advice: 求职建议
     :return: 包含会话配置的字典
+
+    Args:
+        thread_id:
+        thread_id:
     """
     global global_mcp_tools
     global get_tools_task
@@ -161,10 +359,9 @@ async def init_conversation_agent(resume_summary_text: str,
     )
 
     # 生成一个会话ID，用于临时会话
-    thread_id = str(uuid.uuid4())
     conversation_config = {
-        "configuration": {
-            "thread_id": thread_id
+        "configurable": {
+            "thread_id": str(thread_id)
         }
     }
 
@@ -198,12 +395,11 @@ async def init_conversation_agent(resume_summary_text: str,
     agent_tools.extend(mcp_tools)
 
     # 创建对话智能体
+    # 该agent不传入记忆组件，是无状态的。所有上下文均由外部Graph通过state传入和统一管理
     conversation_agent = create_agent(
         model=conversation_llm,
         tools=agent_tools,
         system_prompt=conversation_system_prompt,
-        # checkpointer=await utils.get_checkpointer(),
-        # store=await utils.get_store()
     )
 
     # 直接返回对象，不再设置 contextvars
@@ -228,6 +424,47 @@ async def invoke_agent_in_background(queue: asyncio.Queue, message: str, convers
         ):
             await queue.put(chunk)
 
+    except Exception as e:
+        await queue.put({"error": str(e)})
+    finally:
+        # 结束信号
+        await queue.put(None)
+
+
+async def invoke_conversation_graph_in_background(queue: asyncio.Queue, message: str, conversation_agent, config):
+    """
+    当用户输入完毕，发起一次调用后，在后台运行Conversation Graph，并将流式输出块放入队列。
+    """
+    # 确保初始化了 conversation_graph_executor
+    if conversation_graph_executor is None:
+        await init_graph_executor()
+
+    # 构造初始状态
+    initial_state = ConversationState(
+        messages=[],
+        max_tokens=20000,   # 设置上下文的最大Token数阈值
+        max_dialogues=8,    # 设置上下文的最大对话轮数阈值
+        summary="",
+        input=message,
+        final_answer="",
+    )
+    
+    # 将不可序列化的对象放入 configurable 中
+    run_config = config.copy()
+    if "configurable" not in run_config:
+        run_config["configurable"] = {}
+    else:
+        run_config["configurable"] = run_config["configurable"].copy()
+    
+    run_config["configurable"]["chat_agent"] = conversation_agent
+    run_config["configurable"]["queue"] = queue
+
+    # 使用指定的 config 调用 Conversation Graph
+    try:
+        await conversation_graph_executor.ainvoke(
+            input=initial_state,
+            config=run_config
+        )
     except Exception as e:
         await queue.put({"error": str(e)})
     finally:
@@ -270,84 +507,90 @@ async def chat_with_agent(message: str, history: list, request: gradio.Request):
     :param request: Gradio 请求对象，可以从中获取session_hash等请求信息
     :return: 异步生成器，yield 流式输出块
     """
-    # 获取当前用户的唯一会话 ID (对应浏览器的一个 Tab)
-    session_id = request.session_hash
-
-    # 2. 获取 URL 中的参数 (用于定位预先生成的数据)
-    # 假设 URL 是 http://localhost:7860/?user_id=123&resume_id=456&jd_id=789
-    # 如需使用mock数据测试，可以在gradio启动后访问 http://localhost:7860/?user_id=mock_user&resume_id=mock_resume&jd_id=mock_jd
-    params = request.query_params
-    analysis_id = params.get("analysis_id", "")  # 获取 analysis_id 参数（如果不存在则用空字符串代替）
-
-    logging.info(f"收到来自 session_id: {session_id} 的请求, analysis_id: {analysis_id}")
-
-    # 判断对话智能体是否已经被初始化。如果没有就调用init_conversation_agent
-    # 需要注意init_conversation_agent方法所需的参数从thread_local中获取
-    if session_id not in sessions_context_register:
-        logging.error("对话智能体尚未初始化!")
-
-        # --- 数据获取逻辑 ---
-        # 从 Redis 中获取预生成的数据
-        redis_key = get_resume_analysis_redis_key(analysis_id)
-        logging.info(f"尝试从Redis中获取预生成数据，以初始化智能体。Redis Key: {redis_key}")
-        init_data = redis_client.hgetall(redis_key)
-
-        if init_data and init_data != {}:
-            logging.info(f"在Redis中发现预生成数据，Redis Key: {redis_key}")
-
-            resume_summary_text = init_data.get("resume_summary_text", "")
-            jd_summary_text = init_data.get("jd_summary_text", "")
-            differences = init_data.get("differences", "")
-            match_score = init_data.get("match_score", -1)
-            improvement_suggestions = init_data.get("improvement_suggestions", "")
-            job_hunting_advice = init_data.get("job_hunting_advice", "")
-            # ... 获取其他字段
-        else:
-            logging.warning("未找到预生成数据或未提供 Key\n将不附带简历分析数据启动对话智能体。")
-            # 如果没有找到预生成数据，就使用空字符串或默认值
-            resume_summary_text = ""
-            jd_summary_text = ""
-            match_score = -1  # 使用 -1 表示无效分数
-            differences = ""
-            improvement_suggestions = ""
-            job_hunting_advice = ""
-
-        logging.info("对话智能体正在初始化...")
-
-        agent, config = await init_conversation_agent(
-            resume_summary_text=resume_summary_text,
-            jd_summary_text=jd_summary_text,
-            match_score=match_score,
-            differences=differences,
-            improvement_suggestions=improvement_suggestions,
-            job_hunting_advice=job_hunting_advice,
-        )
-
-        # 将 Agent 和 Config 存入全局字典，实现持久化
-        sessions_context_register[session_id] = {
-            "conversation_agent": agent,
-            "conversation_config": config
-        }
-        logging.info("对话智能体初始化完成。")
-
-    # 从全局字典中获取当前用户的 Agent 和 Config
-    user_context = sessions_context_register[session_id]
-    conversation_agent = user_context["conversation_agent"]
-    config = user_context["conversation_config"]
-
-    queue = asyncio.Queue()
-
-    # 启动后台任务（不要await，应该用asyncio开启一个新的后台任务）
-    task = asyncio.create_task(invoke_agent_in_background(queue, message, conversation_agent, config))
-
-    full_response = ""
-
-    # 如果你不想占位文本，可以移除下面两行，但务必在结束前确保至少 yield 一次。
-    # placeholder = "正在处理，请稍候..."
-    # yield placeholder
-    output_once = False
-
+    
     try:
+        # 确保初始化了 conversation_graph_executor
+        if conversation_graph_executor is None:
+            await init_graph_executor()
+        
+        # 获取当前用户的唯一会话 ID (对应浏览器的一个 Tab)
+        session_id = request.session_hash
+
+        # 2. 获取 URL 中的参数 (用于定位预先生成的数据)
+        # 假设 URL 是 http://localhost:7860/?analysis_id=1
+        params = request.query_params
+        analysis_id = params.get("analysis_id", "")  # 获取 analysis_id 参数（如果不存在则用空字符串代替）
+
+        logging.info(f"收到来自 session_id: {session_id} 的请求, analysis_id: {analysis_id}")
+
+        # 判断对话智能体是否已经被初始化。如果没有就调用init_conversation_agent
+        # 需要注意init_conversation_agent方法所需的参数从thread_local中获取
+        if session_id not in sessions_context_register:
+            logging.error("对话智能体尚未初始化!")
+
+            # --- 数据获取逻辑 ---
+            # 从 Redis 中获取预生成的数据
+            redis_key = get_resume_analysis_redis_key(analysis_id)
+            logging.info(f"尝试从Redis中获取预生成数据，以初始化智能体。Redis Key: {redis_key}")
+            init_data = redis_client.hgetall(redis_key)
+
+            if init_data and init_data != {}:
+                logging.info(f"在Redis中发现预生成数据，Redis Key: {redis_key}")
+
+                resume_summary_text = init_data.get("resume_summary_text", "")
+                jd_summary_text = init_data.get("jd_summary_text", "")
+                differences = init_data.get("differences", "")
+                match_score = init_data.get("match_score", -1)
+                improvement_suggestions = init_data.get("improvement_suggestions", "")
+                job_hunting_advice = init_data.get("job_hunting_advice", "")
+                # ... 获取其他字段
+            else:
+                logging.warning("未找到预生成数据或未提供 Key\n将不附带简历分析数据启动对话智能体。")
+                # 如果没有找到预生成数据，就使用空字符串或默认值
+                resume_summary_text = ""
+                jd_summary_text = ""
+                match_score = -1  # 使用 -1 表示无效分数
+                differences = ""
+                improvement_suggestions = ""
+                job_hunting_advice = ""
+
+            logging.info("对话智能体正在初始化...")
+
+            agent, config = await init_conversation_agent(
+                analysis_id,
+                resume_summary_text=resume_summary_text,
+                jd_summary_text=jd_summary_text,
+                match_score=match_score,
+                differences=differences,
+                improvement_suggestions=improvement_suggestions,
+                job_hunting_advice=job_hunting_advice,
+            )
+
+            # 将 Agent 和 Config 存入全局字典，实现持久化。
+            # 使用analysis_id作为键，确保每个分析记录的会话是独立的。
+            sessions_context_register[analysis_id] = {
+                "conversation_agent": agent,
+                "conversation_config": config
+            }
+            logging.info("对话智能体初始化完成。")
+
+        # 从全局字典中获取当前用户的 Agent 和 Config
+        user_context = sessions_context_register[analysis_id]
+        conversation_agent = user_context["conversation_agent"]
+        config = user_context["conversation_config"]
+
+        queue = asyncio.Queue()
+
+        # 启动后台任务，让模型根据用户的输入生成回复（不要await，应该用asyncio开启一个新的后台任务）
+        task = asyncio.create_task(invoke_conversation_graph_in_background(queue, message, conversation_agent, config))
+
+        full_response = ""
+
+        # 如果你不想占位文本，可以移除下面两行，但务必在结束前确保至少 yield 一次。
+        # placeholder = "正在处理，请稍候..."
+        # yield placeholder
+        output_once = False
+
         while True:
             chunk = await queue.get()
 
@@ -360,7 +603,11 @@ async def chat_with_agent(message: str, history: list, request: gradio.Request):
 
             # 错误通道
             if isinstance(chunk, dict) and "error" in chunk:
-                yield f"抱歉，处理时出现错误: {chunk['error']}"
+                while True:
+                    yield f"抱歉，处理时出现错误: {chunk['error']}"
+                    chunk = await queue.get()
+                    if chunk is None:
+                        break
                 break
 
             # 仅处理形如 (BaseMessage, metadata) 的AIMessage流块
@@ -374,6 +621,10 @@ async def chat_with_agent(message: str, history: list, request: gradio.Request):
                     full_response += final_text
                     yield full_response
                     output_once = True
+
+    except Exception as e:
+        logging.error(f"chat_with_agent 回调出现异常: {e}")
+        yield f"抱歉，处理时出现错误: {e}"
 
     finally:
         # 确保后台任务结束（若仍在运行则取消）
@@ -389,20 +640,23 @@ def cleanup_session_context(request: gradio.Request):
     :param request: Gradio 请求对象，可以从中获取session_hash等请求信息
     """
     if not request:
-        return # 无请求对象，无法获取 session_id
+        return      # 无请求对象，无法获取请求参数
 
     session_id = request.session_hash
-    if session_id in sessions_context_register:
+    params = request.query_params
+    analysis_id = params.get("analysis_id", "")  # 获取 analysis_id 参数
+    if analysis_id in sessions_context_register:
         try:
             # 删除当前会话对应的 agent 和 config
-            del sessions_context_register[session_id]
-            logging.info(f"用户断开连接，已清理 session_id: {session_id} 的会话资源。")
+            del sessions_context_register[analysis_id]
+            logging.info(f"用户断开连接，已清理 session_id: {session_id} ，analysis_id: {analysis_id} 的会话资源。")
             logging.info(f"当前剩余活跃会话数: {len(sessions_context_register)}")
         except Exception as e:
-            logging.error(f"清理 session_id: {session_id} 的会话资源时出错: {e}")
+            logging.error(f"清理 session_id: {session_id} 的会话资源时出错，analysis_id: {analysis_id}: {e}")
 
 
 def mock_data():
+    # 如需使用mock数据测试，可以在gradio启动后访问 http://localhost:7860/?analysis_id=16
     thread_resume_summary_text.set(f"""姓名: 项炎
     年龄: 37
     教育背景: 学校: 北京科技经营管理学院; 学位: 学士学位; 毕业年份: 2010.06
@@ -491,8 +745,8 @@ def start_bot_interface():
     try:
         # 尝试使用端口 7860 启动 Gradio 应用
         bot_interface.launch(server_name="0.0.0.0", server_port=7860)
-    except Exception as e:
-        logging.error(f"简历分析助手出现异常: {e}\n")
+    except RuntimeError as e:
+        logging.error(f"简历分析助手出现运行异常: {e}\n")
         raise e
     finally:
         # 无论如何都确保执行完毕或异常后关闭服务连接

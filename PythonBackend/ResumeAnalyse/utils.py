@@ -8,8 +8,10 @@ import redis
 from langchain_chroma import Chroma
 from langchain_core.runnables import RunnableConfig
 from langchain_huggingface import HuggingFaceEmbeddings
+from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.store.postgres import AsyncPostgresStore
+from psycopg_pool import AsyncConnectionPool, ConnectionPool
 
 """
 全局配置文件，定义了日志配置、API Key、记忆存储配置等全局使用的内容。
@@ -141,10 +143,6 @@ PG_DB_URL = f"postgresql://{pg_username}:{pg_password}@{pg_host}:{pg_port}/{pg_d
 # checkpointer_cm = PostgresSaver.from_conn_string(str(DB_URL))
 # store_cm = PostgresStore.from_conn_string(str(DB_URL))
 
-# 由于Graph中涉及到异步调用（MCP服务），因此这里使用异步版本的PostgreSQL实现的短期和长期记忆
-checkpointer_cm = AsyncPostgresSaver.from_conn_string(str(PG_DB_URL))
-store_cm = AsyncPostgresStore.from_conn_string(str(PG_DB_URL))
-
 # 这里使用 __enter__() 方法来获取上下文管理器中的checkpointer和store对象
 # checkpointer = checkpointer_cm.__enter__()
 # store = store_cm.__enter__()
@@ -155,20 +153,90 @@ store_cm = AsyncPostgresStore.from_conn_string(str(PG_DB_URL))
 # 并且采用懒加载的方式，只有在需要时才创建对象
 checkpointer: AsyncPostgresSaver = None
 store: AsyncPostgresSaver = None
+sync_checkpointer: PostgresSaver = None     # 同步版本的checkpointer
+sync_store: PostgresSaver = None           # 同步版本的store
+
+# 为checkpointer和store创建异步连接池，以提高并发性能
+checkpointer_connection_pool: AsyncConnectionPool = None
+store_connection_pool: AsyncConnectionPool = None
+checkpointer_sync_connection_pool: ConnectionPool = None    # 同步版本的连接池
+store_sync_connection_pool: ConnectionPool = None        # 同步版本的连接池
 
 
 async def get_checkpointer():
     global checkpointer
     if checkpointer is None:
-        checkpointer = await checkpointer_cm.__aenter__()
+        # 由于Graph中涉及到异步调用（MCP服务），因此这里使用异步版本的PostgreSQL实现的短期和长期记忆
+        # checkpointer_cm = AsyncPostgresSaver.from_conn_string(str(PG_DB_URL))
+        # checkpointer = await checkpointer_cm.__aenter__()
+        checkpointer = await AsyncPostgresSaver.from_conn_string(str(PG_DB_URL))
     return checkpointer
 
 
 async def get_store():
     global store
     if store is None:
-        store = await store_cm.__aenter__()
+        # 由于Graph中涉及到异步调用（MCP服务），因此这里使用异步版本的PostgreSQL实现的短期和长期记忆
+        # store_cm = AsyncPostgresStore.from_conn_string(str(PG_DB_URL))
+        # store = await store_cm.__aenter__()
+        store = await AsyncPostgresStore.from_conn_string(str(PG_DB_URL))
     return store
+
+
+"""
+获取基于连接池的异步checkpointer和store
+更推荐使用这种方式，以提高并发性能
+"""
+async def get_pooled_checkpointer():
+    """获取基于连接池的checkpointer"""
+    global checkpointer, checkpointer_connection_pool
+    if checkpointer is None:
+        # 创建连接池
+        checkpointer_connection_pool = AsyncConnectionPool(conninfo=str(PG_DB_URL), max_size=20)
+        # 开启连接池
+        await checkpointer_connection_pool.open()
+        # 由于Graph中涉及到异步调用（MCP服务），因此这里使用异步版本的PostgreSQL实现的短期和长期记忆
+        checkpointer = AsyncPostgresSaver(conn=checkpointer_connection_pool)
+    return checkpointer
+
+
+async def get_pooled_store():
+    """获取基于连接池的store"""
+    global store, store_connection_pool
+    if store is None:
+        # 创建连接池
+        store_connection_pool = AsyncConnectionPool(conninfo=str(PG_DB_URL), max_size=10)
+        # 开启连接池
+        await store_connection_pool.open()
+        # 由于Graph中涉及到异步调用（MCP服务），因此这里使用异步版本的PostgreSQL实现的短期和长期记忆
+        store = AsyncPostgresStore(conn=store_connection_pool)
+    return store
+
+
+"""
+获取基于连接池的同步checkpointer和store
+不同于上面的异步版本，同步版本用于同步代码读写Memory数据库
+"""
+def get_sync_pooled_checkpointer():
+    """获取基于连接池的同步checkpointer"""
+    global sync_checkpointer, checkpointer_sync_connection_pool
+    if sync_checkpointer is None:
+        # 创建连接池
+        checkpointer_sync_connection_pool = ConnectionPool(conninfo=str(PG_DB_URL), max_size=20)
+        # 由于Graph中涉及到异步调用（MCP服务），因此这里使用异步版本的PostgreSQL实现的短期和长期记忆
+        sync_checkpointer = PostgresSaver(conn=checkpointer_sync_connection_pool)
+    return sync_checkpointer
+
+
+def get_sync_pooled_store():
+    """获取基于连接池的同步store"""
+    global sync_store, store_sync_connection_pool
+    if sync_store is None:
+        # 创建连接池
+        store_sync_connection_pool = ConnectionPool(conninfo=str(PG_DB_URL), max_size=10)
+        # 由于Graph中涉及到异步调用（MCP服务），因此这里使用异步版本的PostgreSQL实现的短期和长期记忆
+        sync_store = PostgresSaver(conn=store_sync_connection_pool)
+    return sync_store
 
 
 async def setup_memory():
@@ -187,13 +255,15 @@ async def setup_memory():
 
 
 # 定义记忆退出函数，用于在Graph停止工作后断开数据库连接，释放资源
-async def close_memory():
+async def close_memory_connection():
     """异步清理函数，在程序退出时关闭连接"""
     # 检查对象是否已被创建，如果被创建了才调用退出
     if checkpointer is not None:
-        await checkpointer_cm.__aexit__(None, None, None)
+        # await checkpointer_cm.__aexit__(None, None, None)
+        await checkpointer_connection_pool.close()
     if store is not None:
-        await store_cm.__aexit__(None, None, None)
+        # await store_cm.__aexit__(None, None, None)
+        await store_connection_pool.close()
 
 
 async def delete_memory_by_thread_id(thread_id: str):
@@ -206,7 +276,7 @@ async def delete_memory_by_thread_id(thread_id: str):
 
 
 async def get_checkpointer_memory(config: RunnableConfig):
-    """删除所有的记忆数据"""
+    """获取特定的checkpointer内的数据"""
     checkpoint = None
     if checkpointer is not None:
         checkpoint = await checkpointer.aget_tuple(config)
@@ -218,7 +288,7 @@ async def get_checkpointer_memory(config: RunnableConfig):
 
 
 async def get_store_memory(config: RunnableConfig):
-    """获取存储的数据"""
+    """获取特定的store内存储的数据"""
     stored_data = None
     if store is not None:
         stored_data = await store.aget_tuple(config)

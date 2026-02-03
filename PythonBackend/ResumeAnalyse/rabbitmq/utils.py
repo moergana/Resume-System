@@ -1,5 +1,8 @@
 import logging
 
+import aio_pika
+
+from ResumeAnalyse.utils import settings
 from pika.connection import ConnectionParameters
 from pika.credentials import PlainCredentials
 
@@ -11,15 +14,27 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+# 从配置文件中获取RabbitMQ的连接设置
+rabbitmq_settings = settings.get("RabbitMQ", {})
+
+# 创建pika依赖的RabbitMQ连接参数，只能用于同步的pika
 mq_parameters = ConnectionParameters(
-    host="localhost",
-    port=5672,
-    virtual_host="/resumesys",
+    host=rabbitmq_settings.get("Host", "localhost"),
+    port=rabbitmq_settings.get("Port", 5672),
+    virtual_host=rabbitmq_settings.get("Virtual_Host", "/"),
     credentials=PlainCredentials(
-        username="resumesys",
-        password="resume123"
+        username=rabbitmq_settings.get("Username", ""),
+        password=rabbitmq_settings.get("Password", "")
     )
 )
+
+aio_mq_parameters = {
+    "host": rabbitmq_settings.get("Host", "localhost"),
+    "port": rabbitmq_settings.get("Port", 5672),
+    "virtualhost": rabbitmq_settings.get("Virtual_Host", "/"),
+    "login": rabbitmq_settings.get("Username", ""),
+    "password": rabbitmq_settings.get("Password", "")
+}
 
 
 def generate_jd_summary_text(request: ResumeAnalysisDTO):

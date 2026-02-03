@@ -7,7 +7,7 @@ from ResumeAnalyse.constants import RESUME_ANALYSIS_FINISHED_STATUS, RESUME_ANAL
 from ResumeAnalyse.entity.resume_analysis_dto import ResumeAnalysisDTO
 from ResumeAnalyse.rabbitmq.constants import *
 from ResumeAnalyse.rabbitmq.utils import generate_jd_summary_text
-from ResumeAnalyse.utils import redis_client
+from ResumeAnalyse.utils import redis_client, get_sync_pooled_checkpointer
 
 
 def resume_analyse_callback(ch, method, properties, body):
