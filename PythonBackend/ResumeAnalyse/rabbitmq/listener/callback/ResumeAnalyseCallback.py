@@ -7,7 +7,7 @@ from ResumeAnalyse.constants import RESUME_ANALYSIS_FINISHED_STATUS, RESUME_ANAL
 from ResumeAnalyse.entity.resume_analysis_dto import ResumeAnalysisDTO
 from ResumeAnalyse.rabbitmq.constants import *
 from ResumeAnalyse.rabbitmq.utils import generate_jd_summary_text
-from ResumeAnalyse.utils import redis_client, get_sync_pooled_checkpointer
+from ResumeAnalyse.utils import redis_client, get_sync_pooled_checkpointer, mysql_engine
 
 
 def resume_analyse_callback(ch, method, properties, body):
@@ -105,6 +105,30 @@ def resume_analyse_callback(ch, method, properties, body):
         )
         logging.info(f"Successfully processed and sent result message to queue: {ANALYSE_RESULT_QUEUE_NAME}.")
 
+        # 将final_state中的summary信息保存到MySQL数据库中
+        logging.info(f"Saving summary texts to MySQL tb_analysis_summary for ID: {resume_analysis_result.id}.")
+        with mysql_engine.connect() as connection:
+            result = connection.execute(
+                f"""INSERT INTO tb_analysis_summary 
+                (analysis_id, user_id, resume_id, jd_id, resume_summary_text, jd_summary_text)
+                 VALUES (%s, %s, %s, %s, %s, %s)""",
+                (
+                 resume_analysis_result.id,
+                 resume_analysis_result.userId,
+                 resume_analysis_result.resumeId,
+                 resume_analysis_result.jdID,
+                 final_state.get("resume_summary_text", ""),
+                 final_state.get("jd_summary_text", "")
+                )
+            )
+            # 注意：对于INSERT、UPDATE、DELETE等操作，需要手动提交事务才能实现修改
+            connection.commit()
+            # 检查是否插入成功
+            if result.rowcount == 0:
+                logging.error(f"Failed to saved summary texts to MySQL tb_analysis_summary for ID: {resume_analysis_result.id}.")
+            else:
+                logging.info(f"Successfully saved summary texts to MySQL tb_analysis_summary for ID: {resume_analysis_result.id}.")
+
         # 将分析的结果保存到Redis中，以备聊天bot查询使用
         # 该结果在Redis中并不永久保存，而是设置了TTL过期时间
         logging.info(f"Saving resume analysis result to Redis for ID: {resume_analysis_result.id}.")
@@ -125,7 +149,7 @@ def resume_analyse_callback(ch, method, properties, body):
         ch.basic_ack(delivery_tag=delivery_tag, multiple=False)
 
     except Exception as e:
-        logging.error(f"Error sending result message to queue or saving to Redis: {e}")
+        logging.error(f"Error sending result message to queue, or saving to MySQL database, or saving to Redis: {e}")
         # 如果处理失败，拒绝消息并且不再重新入队（已经配置了死信交换机，消费失败的消息会转发到相应的死信队列）
         ch.basic_nack(delivery_tag=delivery_tag, multiple=False, requeue=False)
         return

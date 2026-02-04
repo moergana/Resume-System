@@ -425,7 +425,7 @@ const openChatBot = () => {
           <a href="#"
              class="text-primary text-decoration-underline ml-2 font-weight-bold"
              @click.prevent="openChatBot"
-             v-tooltip="'小助手已读取分析记录，该记忆至多保存7天！'"
+             v-tooltip="'小助手已自动读取分析记录哦！'"
           >
             与分析小助手聊一聊
           </a>

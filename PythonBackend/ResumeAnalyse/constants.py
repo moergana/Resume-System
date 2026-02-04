@@ -15,7 +15,10 @@ REQUEST_JD_DELETE = "jd_delete"
 
 # 用于保存分析记录详细信息到Redis的Redis Key前缀
 RESUME_ANALYSIS_REDIS_KEY_PREFIX = "resume_analysis:chatbot_context:"
-RESUME_ANALYSIS_REDIS_TTL = 7 * 24 * 60 * 60  # 7天，单位为秒
+RESUME_ANALYSIS_REDIS_TTL = 1 * 60 * 60  # 1小时，单位为秒
+NULL_REDIS_TTL = 3 * 60  # 3分钟，单位为秒
+# resume analysis的布谷鸟过滤器的Redis Key
+RESUME_ANALYSIS_CUCKOO_FILTER_REDIS_KEY = "cuckoo_filter:resume_analysis"
 
 # 聊天机器人（Conversation.py）相关常量
 CONVERSATION_MAX_TOKENS = 20000     # 触发上下文总结压缩的最大历史对话Token数

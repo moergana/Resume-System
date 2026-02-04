@@ -12,6 +12,7 @@ from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.store.postgres import AsyncPostgresStore
 from psycopg_pool import AsyncConnectionPool, ConnectionPool
+from sqlalchemy import create_engine
 
 """
 全局配置文件，定义了日志配置、API Key、记忆存储配置等全局使用的内容。
@@ -96,6 +97,41 @@ llm = ChatZhipuAI(
 dashscope_api_key = os.getenv("DASHSCOPE_API_KEY")
 assert dashscope_api_key, "请先在系统环境变量中设置 DASHSCOPE_API_KEY！"
 
+
+"""
+MySQL数据库配置
+"""
+mysql_host = settings["MySQL"]["Host"]
+mysql_port = settings["MySQL"]["Port"]
+mysql_db = settings["MySQL"]["Database"]
+mysql_username = settings["MySQL"]["Username"]
+mysql_password = settings["MySQL"]["Password"]
+# 该URL适用于SQLAlchemy创建数据库引擎
+MYSQL_DB_URL = f"mysql+pymysql://{mysql_username}:{mysql_password}@{mysql_host}:{mysql_port}/{mysql_db}?charset=utf8mb4"
+# 创建一个全局可用的SQLAlchemy引擎实例
+mysql_engine = create_engine(
+    url=MYSQL_DB_URL,
+    pool_size=10,         # 连接池大小，连接池常驻的核心连接数量
+    max_overflow=20,      # 连接池最大溢出数量，当池满了之后，允许临时额外创建的连接数
+    pool_timeout=30,      # 连接池获取连接的超时时间
+    pool_recycle=14400,    # 连接池中连接的回收周期，多久之后强制回收连接（MySQL默认8小时自动断开无活动的连接，导致连接失效）。单位秒
+    pool_pre_ping=True    # 启用连接池预检功能，每次取连接前先“ping”一下，确保连接还活着
+)
+
+
+"""
+Redis配置
+"""
+redis_host = settings["Redis"]["Host"]
+redis_port = settings["Redis"]["Port"]
+redis_db = settings["Redis"]["Database"]
+redis_password = settings["Redis"]["Password"]
+redis_decode_responses = settings["Redis"]["Decode_Responses"]
+redis_pool = redis.ConnectionPool(host=redis_host, port=redis_port, db=redis_db, decode_responses=redis_decode_responses,
+                                  password=redis_password)
+redis_client = redis.Redis(connection_pool=redis_pool)
+
+
 """
 嵌入模型配置
 """
@@ -129,11 +165,14 @@ JD_vectordb = Chroma(
 # store = InMemoryStore()
 
 
-pg_host = settings["PostgreSql"]["Host"]
-pg_port = settings["PostgreSql"]["Port"]
-pg_db = settings["PostgreSql"]["Database"]
-pg_username = settings["PostgreSql"]["Username"]
-pg_password = settings["PostgreSql"]["Password"]
+"""
+PostgreSQL数据库配置
+"""
+pg_host = settings["PostgreSQL"]["Host"]
+pg_port = settings["PostgreSQL"]["Port"]
+pg_db = settings["PostgreSQL"]["Database"]
+pg_username = settings["PostgreSQL"]["Username"]
+pg_password = settings["PostgreSQL"]["Password"]
 # 以下是基于PostgreSQL数据库实现的短期和长期记忆，会将记忆内容记录到PostgreSQL的langgraph database中
 PG_DB_URL = f"postgresql://{pg_username}:{pg_password}@{pg_host}:{pg_port}/{pg_db}"
 
@@ -167,9 +206,8 @@ async def get_checkpointer():
     global checkpointer
     if checkpointer is None:
         # 由于Graph中涉及到异步调用（MCP服务），因此这里使用异步版本的PostgreSQL实现的短期和长期记忆
-        # checkpointer_cm = AsyncPostgresSaver.from_conn_string(str(PG_DB_URL))
-        # checkpointer = await checkpointer_cm.__aenter__()
-        checkpointer = await AsyncPostgresSaver.from_conn_string(str(PG_DB_URL))
+        checkpointer_cm = AsyncPostgresSaver.from_conn_string(str(PG_DB_URL))
+        checkpointer = await checkpointer_cm.__aenter__()
     return checkpointer
 
 
@@ -177,9 +215,8 @@ async def get_store():
     global store
     if store is None:
         # 由于Graph中涉及到异步调用（MCP服务），因此这里使用异步版本的PostgreSQL实现的短期和长期记忆
-        # store_cm = AsyncPostgresStore.from_conn_string(str(PG_DB_URL))
-        # store = await store_cm.__aenter__()
-        store = await AsyncPostgresStore.from_conn_string(str(PG_DB_URL))
+        store_cm = AsyncPostgresStore.from_conn_string(str(PG_DB_URL))
+        store = await store_cm.__aenter__()
     return store
 
 
@@ -191,8 +228,8 @@ async def get_pooled_checkpointer():
     """获取基于连接池的checkpointer"""
     global checkpointer, checkpointer_connection_pool
     if checkpointer is None:
-        # 创建连接池
-        checkpointer_connection_pool = AsyncConnectionPool(conninfo=str(PG_DB_URL), max_size=20)
+        # 创建连接池(将open参数设为False，该参数已被废弃)
+        checkpointer_connection_pool = AsyncConnectionPool(conninfo=str(PG_DB_URL), max_size=20, open=False)
         # 开启连接池
         await checkpointer_connection_pool.open()
         # 由于Graph中涉及到异步调用（MCP服务），因此这里使用异步版本的PostgreSQL实现的短期和长期记忆
@@ -204,8 +241,8 @@ async def get_pooled_store():
     """获取基于连接池的store"""
     global store, store_connection_pool
     if store is None:
-        # 创建连接池
-        store_connection_pool = AsyncConnectionPool(conninfo=str(PG_DB_URL), max_size=10)
+        # 创建连接池(将open参数设为False，该参数已被废弃)
+        store_connection_pool = AsyncConnectionPool(conninfo=str(PG_DB_URL), max_size=10, open=False)
         # 开启连接池
         await store_connection_pool.open()
         # 由于Graph中涉及到异步调用（MCP服务），因此这里使用异步版本的PostgreSQL实现的短期和长期记忆
@@ -245,8 +282,8 @@ async def setup_memory():
     仅在第一次使用数据库时调用，后续不需要重复调用，以免删除已有的数据。
     """
     global checkpointer, store
-    checkpointer = await get_checkpointer()
-    store = await get_store()
+    checkpointer = await get_pooled_checkpointer()
+    store = await get_pooled_store()
     # 调用setup()方法初始化数据库表结构。
     # 需要注意，每次调用setup()，都会重置回到初始状态，删除所有已有的数据
     await checkpointer.setup()
@@ -266,47 +303,61 @@ async def close_memory_connection():
         await store_connection_pool.close()
 
 
-async def delete_memory_by_thread_id(thread_id: str):
+async def delete_checkpointer(config: RunnableConfig):
     """根据thread_id删除相关的记忆数据"""
-    if checkpointer is not None:
-        await checkpointer.adelete_thread(thread_id)
-    if store is not None:
-        await store.adelete_thread(thread_id)
-    logging.info(f"已删除 thread_id={thread_id} 相关的记忆数据")
+    global checkpointer
+    # 获取store对象
+    checkpointer = await get_pooled_checkpointer()
+    thread_id = config.get("configurable", {}).get("thread_id", "")
+    # 删除thread_id相关的数据
+    await checkpointer.adelete_thread(thread_id)
+    logging.info(f"已删除 thread_id={thread_id} 相关的Checkpointer记忆数据")
+
+
+async def delete_store(config: RunnableConfig):
+    """根据thread_id删除相关的记忆数据"""
+    global store
+    # 获取checkpointer和store对象
+    store = await get_pooled_store()
+    store_namespace = config.get("configurable", {}).get("store_namespace", ())
+    store_key = config.get("configurable", {}).get("store_key", "")
+    # 删除store中相关的数据，需要指定Namespace和Key（而不是thread_id）
+    await store.adelete(store_namespace, store_key)
+    logging.info(f"已删除 namespace={store_namespace}, key={store_key} 相关的Store记忆数据")
 
 
 async def get_checkpointer_memory(config: RunnableConfig):
     """获取特定的checkpointer内的数据"""
-    checkpoint = None
-    if checkpointer is not None:
-        checkpoint = await checkpointer.aget_tuple(config)
+    global checkpointer, store
+    # 获取checkpointer对象
+    checkpointer = await get_pooled_checkpointer()
+    # 获取记忆数据
+    checkpoint = await checkpointer.aget(config)
     if checkpoint is not None:
-        logging.debug(f"已获取 checkpoint: {checkpoint}")
+        logging.info(f"已获取 checkpoint: {checkpoint}")
     else:
-        logging.debug(f"未找到对应的 checkpoint，config: {config}")
+        logging.info(f"未找到对应的 checkpoint，config: {config}")
     return checkpoint
 
 
 async def get_store_memory(config: RunnableConfig):
     """获取特定的store内存储的数据"""
-    stored_data = None
-    if store is not None:
-        stored_data = await store.aget_tuple(config)
-    if stored_data is not None:
+    global checkpointer, store
+    # 获取store对象
+    store = await get_pooled_store()
+    # 获取记忆数据
+    # 首先需要从config中获取store_namespace和store_key
+    store_namespace = config.get("configurable", {}).get("store_namespace")
+    store_key = config.get("configurable", {}).get("store_key")
+    stored_data = await store.aget(store_namespace, store_key)
+        
+    if stored_data:
         logging.debug(f"已获取 store 数据: {stored_data}")
     else:
         logging.debug(f"未找到对应的 store 数据，config: {config}")
     return stored_data
 
 
-redis_host = settings["Redis"]["Host"]
-redis_port = settings["Redis"]["Port"]
-redis_db = settings["Redis"]["Database"]
-redis_password = settings["Redis"]["Password"]
-redis_decode_responses = settings["Redis"]["Decode_Responses"]
-redis_pool = redis.ConnectionPool(host=redis_host, port=redis_port, db=redis_db, decode_responses=redis_decode_responses,
-                                  password=redis_password)
-redis_client = redis.Redis(connection_pool=redis_pool)
 
 
 """
@@ -331,4 +382,87 @@ agent_config = {
 
 
 if __name__ == "__main__":
-    asyncio.run(setup_memory())
+    command_id = input(f"""
+请输入要执行的命令编号：
+"0": 查看命令列表
+"1": 初始化基于PostgreSQL的 checkpointer 和 store 的数据库表结构
+"2": 删除指定thread_id的checkpointer的数据
+"3": 删除指定namespace和key的store的数据
+"4": 查询指定thread_id的checkpointer的数据
+"5": 查询指定namespace和key的store的数据
+"quit" or "exit": 退出（不执行任何命令）
+您的选择是：""")
+    try:
+        while True:
+            if command_id == "0":
+                print("""命令编号：
+"0": 查看命令列表
+"1": 初始化基于PostgreSQL的 checkpointer 和 store 的数据库表结构
+"2": 删除指定thread_id的checkpointer的数据
+"3": 删除指定namespace和key的store的数据
+"4": 查询指定thread_id的checkpointer的数据
+"5": 查询指定namespace和key的store的数据
+"quit" or "exit": 退出（不执行任何命令）""")
+
+            elif command_id == "1":
+                print("正在初始化基于PostgreSQL的 checkpointer 和 store 的数据库表结构...")
+                asyncio.run(setup_memory())
+                print("初始化完成！")
+
+            elif command_id == "2":
+                thread_id = input("请输入要删除的checkpointer的记录对应的 thread_id：")
+                print(f"正在删除 thread_id={thread_id} 相关的记忆数据...")
+                config_dict = {
+                    "configurable": {
+                        "thread_id": str(thread_id),
+                    },
+                }
+                asyncio.run(delete_checkpointer(config_dict))
+                print("删除完成！")
+
+            elif command_id == "3":
+                store_namespace = input("请输入要删除的store的记录对应的 namespace（多个namespace用逗号分隔）：")
+                store_key = input("请输入要删除的store的记录对应的 key：")
+                print(f"正在删除 namespace={store_namespace}, key={store_key} 相关的记忆数据...")
+                config_dict = {
+                    "configurable": {
+                        "store_namespace": tuple(store_namespace.split(",")),
+                        "store_key": str(store_key),
+                    },
+                }
+                asyncio.run(delete_store(RunnableConfig(**config_dict)))
+                print("删除完成！")
+
+            elif command_id == "4":
+                thread_id = input("请输入要查询记忆数据的 thread_id：")
+                print(f"正在查询 thread_id={thread_id} 相关的记忆数据...")
+                config_dict = {
+                    "configurable": {
+                        "thread_id": str(thread_id)
+                    },
+                }
+                asyncio.run(get_checkpointer_memory(RunnableConfig(**config_dict)))
+
+            elif command_id == "5":
+                store_namespace = input("请输入要查询记忆数据的 namespace（多个namespace用逗号分隔）：")
+                store_key = input("请输入要查询记忆数据的 key：")
+                print(f"正在查询 namespace={store_namespace}, key={store_key} 相关的记忆数据...")
+                config_dict = {
+                    "configurable": {
+                        "store_namespace": tuple(store_namespace.split(",")),
+                        "store_key": str(store_key),
+                    },
+                }
+                asyncio.run(get_store_memory(RunnableConfig(**config_dict)))
+
+            elif command_id.lower() == "quit" or command_id.lower() == "exit":
+                print("退出程序，不执行任何命令。")
+                break
+            else:
+                print("无效的命令编号，请重新输入有效的编号！")
+
+            command_id = input("请继续输入要执行的命令编号，或输入 'quit' 或 'exit' 退出：")
+
+    except Exception as e:
+        print(f"执行命令时发生异常：{e}")
+        raise e

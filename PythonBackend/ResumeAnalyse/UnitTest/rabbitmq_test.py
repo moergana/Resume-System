@@ -8,7 +8,7 @@ from pika.credentials import PlainCredentials
 
 from ResumeAnalyse.entity.advice import Advice
 
-mq_parameters = ConnectionParameters(
+test_mq_parameters = ConnectionParameters(
     host='localhost',
     port=5672,
     virtual_host="/resumesys",
@@ -17,7 +17,7 @@ mq_parameters = ConnectionParameters(
     ),
 )
 
-connection = BlockingConnection(mq_parameters)
+test_connection = BlockingConnection(test_mq_parameters)
 
 ANALYSE_EXCHANGE_NAME = "analyse.direct"
 ANALYSE_REQUEST_QUEUE_NAME = "analyse.request.queue"
@@ -38,12 +38,12 @@ def consume_callback(ch, method, properties, body):
 
 class MyTestCase(unittest.TestCase):
     def test_rabbitmq_connection(self):
-        channel = connection.channel()
+        channel = test_connection.channel()
         print("成功连接到 RabbitMQ 服务器并创建了一个频道。")
         channel.close()
 
     def test_rabbitmq_ops(self):
-        channel = connection.channel()
+        channel = test_connection.channel()
 
         # 声明一个队列
         # queue_name = 'test_queue'
@@ -70,7 +70,7 @@ class MyTestCase(unittest.TestCase):
         channel.close()
 
     def test_add_listener(self):
-        channel = connection.channel()
+        channel = test_connection.channel()
         channel.basic_consume(
             queue=ANALYSE_REQUEST_QUEUE_NAME,
             on_message_callback=consume_callback,
@@ -90,7 +90,7 @@ class MyTestCase(unittest.TestCase):
             improvement_suggestions="It is a great resume overall.",
             job_hunting_tips="Keep applying to relevant positions and networking.",
         )
-        channel = connection.channel()
+        channel = test_connection.channel()
         channel.basic_publish(
             exchange=ANALYSE_EXCHANGE_NAME,
             routing_key=ANALYSE_RESULT_ROUTING_KEY,
@@ -115,7 +115,7 @@ class MyTestCase(unittest.TestCase):
         }
         msg["id"] = str(msg["id"])
         print(json.dumps(msg))
-        channel = connection.channel()
+        channel = test_connection.channel()
         channel.basic_publish(
             exchange=ANALYSE_EXCHANGE_NAME,
             routing_key=ANALYSE_RESULT_ROUTING_KEY,

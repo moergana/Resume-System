@@ -1,8 +1,10 @@
 import asyncio
 import contextlib
+import json
 import logging
 import uuid
 from typing import TypedDict, List
+from sqlalchemy import text
 
 import gradio
 from langchain.agents import create_agent
@@ -17,12 +19,13 @@ from langgraph.graph.state import CompiledStateGraph, StateGraph
 from langgraph.typing import ContextT, StateT, InputT, OutputT
 
 from ResumeAnalyse import utils
-from ResumeAnalyse.constants import get_resume_analysis_redis_key, CONVERSATION_MAX_DIALOGUES, CONVERSATION_MAX_TOKENS
+from ResumeAnalyse.constants import get_resume_analysis_redis_key, CONVERSATION_MAX_DIALOGUES, CONVERSATION_MAX_TOKENS, \
+    RESUME_ANALYSIS_REDIS_TTL, RESUME_ANALYSIS_CUCKOO_FILTER_REDIS_KEY, NULL_REDIS_TTL
 from ResumeAnalyse.entity.state import ConversationState
 from ResumeAnalyse.entity.thread_local import thread_resume_summary_text, thread_job_hunting_advice, \
     thread_jd_summary_text, thread_match_score, \
     thread_resume_advice
-from ResumeAnalyse.utils import redis_client
+from ResumeAnalyse.utils import redis_client, mysql_engine
 from ResumeAnalyse.entity.mcp import tongyi_web_search_mcp_config, amap_maps_mcp_config, tongyi_web_parser, \
     jina_web_search_mcp_config, mcp_list
 
@@ -37,34 +40,38 @@ conversation_llm = init_chat_model(
 
 # 对话智能体的系统提示词
 conversation_system_prompt_template = PromptTemplate.from_template(template=
-"""你是一个专业的求职助手，能够帮助用户分析简历和职位描述，提供有价值的建议和指导。请根据用户提供的信息，回答相关问题并提供实用的建议。
+"""你是一个专业的求职助手，能够帮助用户分析简历和职位描述，提供有价值的建议和指导。
+如果用户的身份是“求职者”，请从求职者的角度回答用户的简历与目标岗位的相关问题；
+如果用户的身份是“招聘者”，请从招聘者的角度回答用户对于当前这位候选人的简历与招聘岗位的相关问题。
+如果用户的身份是“未知”，你可以先尝试询问用户的身份信息，以便更好地提供帮助。
 
-请注意你拥有以下工具：
-1. 网络搜索工具：可以帮助你获取最新的新闻、信息和数据，特别是在你遇到不熟悉的领域或者不确定的问题时，可以通过调用网络搜索工具来获取最新的信息，并以此辅助你更好地回答用户的问题。
-2. 地图工具：可以帮助你查询地理位置、路径规划、天气查询等信息。
-3. 网页解析工具：可以帮助你从网页中提取有用的信息。
+以下是你需要记住的重要信息：
+
+1. 用户的身份：{user_role}
+
+2. 用户的简历内容概述如下：
+{resume_summary_text}
+
+3. 用户的目标职位描述内容概述如下：
+{jd_summary_text}
+
+4. 用户经过智能简历分析系统，目前得到的分析结果如下：
+简历与职位描述的匹配度分数（百分制。如果是负数比如-1，则表示分数无效）：{match_score}
+简历与职位描述的差异点（如果为空，请忽略该字段）：{differences}
+简历改进建议（如果为空，请忽略该字段）：{resume_advice}
+求职建议（如果为空，请忽略该字段）：{job_hunting_advice}
+**注意事项：以上出现值为空或者无效的字段的话，这类字段就不具有参考必要，你应当忽略！并在需要时，尝试从对话历史（如果有的话）中获取相关信息！**
+
+5. 请注意你拥有以下工具：
+(1) 网络搜索工具：可以帮助你获取最新的新闻、信息和数据，特别是在你遇到不熟悉的领域或者不确定的问题时，可以通过调用网络搜索工具来获取最新的信息，并以此辅助你更好地回答用户的问题。
+(2) 地图工具：可以帮助你查询地理位置、路径规划、天气查询等信息。
+(3) 网页解析工具：可以帮助你从网页中提取有用的信息。
 你需要根据用户的请求，智能地判断是否需要调用工具，应该调用哪个或哪些工具。
 例如：
 用户的请求为“请帮我搜索一下最近的科技新闻”，你应该调用网络搜索工具来完成任务。
 用户的请求为“请帮我查看https://www.google.com/这个网页，并告诉我这个网页的内容”，你应该调用网页解析工具来完成任务。
 ...
 记住：如果调用了工具，将工具返回的信息加以思考和整理之后再反馈给用户。
-
-用户的背景信息：
-1. 用户的简历内容概述如下：
-{resume_summary_text}
-
-2. 用户的目标职位描述内容概述如下：
-{jd_summary_text}
-
-3. 用户经过智能简历分析系统，目前得到的分析结果如下：
-简历与职位描述的匹配度分数（百分制。如果是负数比如-1，则表示分数无效）：{match_score}
-简历与职位描述的差异点（如果为空，请忽略该字段）：{differences}
-简历改进建议（如果为空，请忽略该字段）：{resume_advice}
-求职建议（如果为空，请忽略该字段）：{job_hunting_advice}
-**注意：以上出现值为空或者无效的字段的话，这类字段就不具有参考必要，你应当忽略！并在需要时，尝试从对话历史（如果有的话）中获取相关信息！**
-
-接下来的对话过程中，你需要根据以上信息，回答用户提出的问题，并提供有价值的建议和指导。
 """
 )
 
@@ -191,7 +198,7 @@ def manage_context(state: ConversationState, config: RunnableConfig):
             need_compress = True
     except Exception as e:
         logging.error(f"计算上下文Token数量时出现异常: {e}")
-        logging.info(f"将使用对话轮数限制上下文长度。")
+        logging.info(f"将尝试使用对话轮数限制上下文长度。")
         # 获取设定的对话轮数阈值
         max_dialogues = state.get("max_dialogues", CONVERSATION_MAX_DIALOGUES)
         # 如果计算Token数量失败，则使用对话轮数进行限制
@@ -214,6 +221,8 @@ def manage_context(state: ConversationState, config: RunnableConfig):
             "summary": compressed_context,
             "messages": new_messages
         }
+    else:
+        logging.info("当前上下文长度未超出阈值，无需压缩。")
     # 上下文未超出阈值，无需压缩，state不需要更新
     return {}
 
@@ -349,7 +358,18 @@ async def init_conversation_agent(thread_id: str,
                     get_tools_task = None
 
     # 根据输入参数，利用system prompt生成对话智能体的系统提示词
+    # 根据各种参数的情况，判断用户的身份
+    if (improvement_suggestions.strip() != "") or (job_hunting_advice.strip() != ""):
+        # 用户是求职者
+        user_role = "求职者"
+    elif differences.strip() != "":
+        # 用户是招聘者
+        user_role = "招聘者"
+    else:
+        # 用户身份未知
+        user_role = "未知"
     conversation_system_prompt = conversation_system_prompt_template.format(
+        user_role=user_role,
         resume_summary_text=resume_summary_text,
         jd_summary_text=jd_summary_text,
         match_score=match_score,
@@ -508,6 +528,7 @@ async def chat_with_agent(message: str, history: list, request: gradio.Request):
     :return: 异步生成器，yield 流式输出块
     """
     
+    task = None
     try:
         # 确保初始化了 conversation_graph_executor
         if conversation_graph_executor is None:
@@ -525,34 +546,111 @@ async def chat_with_agent(message: str, history: list, request: gradio.Request):
 
         # 判断对话智能体是否已经被初始化。如果没有就调用init_conversation_agent
         # 需要注意init_conversation_agent方法所需的参数从thread_local中获取
-        if session_id not in sessions_context_register:
-            logging.error("对话智能体尚未初始化!")
+        if analysis_id not in sessions_context_register:
+            logging.info("对话智能体尚未初始化! 尝试初始化对话智能体中...")
 
             # --- 数据获取逻辑 ---
-            # 从 Redis 中获取预生成的数据
-            redis_key = get_resume_analysis_redis_key(analysis_id)
-            logging.info(f"尝试从Redis中获取预生成数据，以初始化智能体。Redis Key: {redis_key}")
-            init_data = redis_client.hgetall(redis_key)
-
-            if init_data and init_data != {}:
-                logging.info(f"在Redis中发现预生成数据，Redis Key: {redis_key}")
-
-                resume_summary_text = init_data.get("resume_summary_text", "")
-                jd_summary_text = init_data.get("jd_summary_text", "")
-                differences = init_data.get("differences", "")
-                match_score = init_data.get("match_score", -1)
-                improvement_suggestions = init_data.get("improvement_suggestions", "")
-                job_hunting_advice = init_data.get("job_hunting_advice", "")
-                # ... 获取其他字段
-            else:
-                logging.warning("未找到预生成数据或未提供 Key\n将不附带简历分析数据启动对话智能体。")
-                # 如果没有找到预生成数据，就使用空字符串或默认值
+            # 首先查询 Redis 中的 Cuckoo Filter，如果过滤器中不存在该 analysis_id，则说明没有对应的预生成数据
+            hasFilter = True if redis_client.exists(RESUME_ANALYSIS_CUCKOO_FILTER_REDIS_KEY) == 1 else False
+            if hasFilter and (not redis_client.cf().exists(RESUME_ANALYSIS_CUCKOO_FILTER_REDIS_KEY, str(analysis_id))):
+                logging.info(f"Redis Cuckoo Filter中不存在 analysis_id: {analysis_id}，将不使用预生成数据初始化智能体。")
                 resume_summary_text = ""
                 jd_summary_text = ""
-                match_score = -1  # 使用 -1 表示无效分数
                 differences = ""
+                match_score = -1
                 improvement_suggestions = ""
                 job_hunting_advice = ""
+            else:
+                if not hasFilter:
+                    logging.error(f"Redis中不存在 Cuckoo Filter，Key: {RESUME_ANALYSIS_CUCKOO_FILTER_REDIS_KEY}。"
+                                  f"跳过过滤器检查，开始尝试从Redis中获取预生成数据初始化智能体。")
+                else:
+                    logging.info(f"Redis Cuckoo Filter中存在 analysis_id: {analysis_id}，尝试使用预生成数据初始化智能体。")
+
+                # 从 Redis 中获取预生成的数据
+                redis_key = get_resume_analysis_redis_key(analysis_id)
+                logging.info(f"尝试从Redis中获取预生成数据，以初始化智能体。Redis Key: {redis_key}")
+                init_data = redis_client.hgetall(redis_key)
+
+                if init_data and init_data != {}:
+                    logging.info(f"在Redis中发现预生成数据，Redis Key: {redis_key}")
+
+                    resume_summary_text = init_data.get("resume_summary_text", "")
+                    jd_summary_text = init_data.get("jd_summary_text", "")
+                    differences = init_data.get("differences", "")
+                    match_score = init_data.get("match_score", -1)
+                    improvement_suggestions = init_data.get("improvement_suggestions", "")
+                    job_hunting_advice = init_data.get("job_hunting_advice", "")
+                    # 刷新过期时间
+                    redis_client.expire(redis_key, RESUME_ANALYSIS_REDIS_TTL)
+
+                else:
+                    # Redis中没能找到预生成数据，尝试从MySQL中获取
+                    is_exist = True
+                    with mysql_engine.connect() as connection:
+                        logging.info(f"Redis中未找到预生成数据，尝试从MySQL中获取。分析记录ID: {analysis_id}")
+                        logging.info(f"正在查询表 tb_resume_analysis 中的预生成数据，分析记录ID: {analysis_id}")
+                        result = connection.execute(
+                            text("""SELECT analysis_result 
+                                    FROM tb_resume_analysis 
+                                    WHERE id = :id"""),
+                            {"id": analysis_id}
+                        )
+                        row = result.fetchone()
+                        if row:
+                            # 从Row对象中获取analysis_result字段的值，并解析为JSON
+                            analysis_result_str = row.analysis_result
+                            analysis_result_json: dict = json.loads(analysis_result_str)
+                            logging.info(f"tb_resume_analysis表中发现预生成数据，分析记录ID: {analysis_id}")
+                            match_score = analysis_result_json.get("match_score", -1)
+                            differences = analysis_result_json.get("differences", "")
+                            improvement_suggestions = analysis_result_json.get("improvement_suggestions", "")
+                            job_hunting_advice = analysis_result_json.get("job_hunting_tips", "")
+                        else:
+                            logging.info(f"tb_resume_analysis表中未找到预生成数据，分析记录ID: {analysis_id}")
+                            match_score = -1  # 使用 -1 表示无效分数
+                            differences = ""
+                            improvement_suggestions = ""
+                            job_hunting_advice = ""
+                            is_exist = False
+
+                        logging.info(f"正在查询表 tb_analysis_summary 中的预生成数据，分析记录ID: {analysis_id}")
+                        result = connection.execute(
+                            text("""SELECT resume_summary_text, jd_summary_text 
+                                    FROM tb_analysis_summary 
+                                    WHERE analysis_id = :id"""),
+                            {"id": analysis_id}
+                        )
+                        row = result.fetchone()
+                        if row:
+                            logging.info(f"tb_analysis_summary中发现预生成数据，分析记录ID: {analysis_id}")
+                            resume_summary_text = row.resume_summary_text or ""
+                            jd_summary_text = row.jd_summary_text or ""
+                        else:
+                            logging.info(f"tb_analysis_summary中未找到预生成数据，记录分析ID: {analysis_id}")
+                            resume_summary_text = ""
+                            jd_summary_text = ""
+                            is_exist = False
+                        # 如果从MySQL中成功获取到了预生成数据，则将其存入Redis，便于下次快速获取
+                        if is_exist:
+                            logging.info(f"从MySQL中成功获取到预生成数据，正在缓存到Redis中。Redis Key: {redis_key}")
+                            # 将查询结果存入Redis，便于下次快速获取
+                            redis_client.hset(redis_key, mapping={
+                                "resume_summary_text": resume_summary_text,
+                                "jd_summary_text": jd_summary_text,
+                                "differences": differences,
+                                "match_score": match_score,
+                                "improvement_suggestions": improvement_suggestions,
+                                "job_hunting_advice": job_hunting_advice,
+                            })
+                            redis_client.expire(redis_key, RESUME_ANALYSIS_REDIS_TTL)  # 设置过期时间
+                            logging.info(f"预生成数据已成功缓存到Redis。Redis Key: {redis_key}")
+                        else:
+                            # 如果MySQL中没能够获取到预生成数据，则在Redis中插入一个空记录，避免缓存穿透
+                            logging.info(f"未能从MySQL中获取到预生成数据。分析记录ID: {analysis_id}")
+                            logging.info(f"将不使用预生成数据初始化智能体...")
+                            redis_client.hset(redis_key, mapping={})
+                            redis_client.expire(redis_key, NULL_REDIS_TTL)  # 设置过期时间
 
             logging.info("对话智能体正在初始化...")
 
@@ -628,7 +726,7 @@ async def chat_with_agent(message: str, history: list, request: gradio.Request):
 
     finally:
         # 确保后台任务结束（若仍在运行则取消）
-        if not task.done():
+        if task and not task.done():
             task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await task

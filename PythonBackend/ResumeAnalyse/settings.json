@@ -1,10 +1,18 @@
 {
-  "PostgreSql": {
+  "PostgreSQL": {
     "Host": "localhost",
     "Port": 5433,
     "Database": "resume_system",
     "Username": "postgres",
     "Password": "post040325sql"
+  },
+
+  "MySQL": {
+    "Host": "localhost",
+    "Port": 3306,
+    "Database": "resume_system",
+    "Username": "root",
+    "Password": "WX040325sql9017"
   },
 
   "Redis": {
