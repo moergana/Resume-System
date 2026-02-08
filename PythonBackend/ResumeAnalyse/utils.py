@@ -14,13 +14,11 @@ from langgraph.store.postgres import AsyncPostgresStore
 from psycopg_pool import AsyncConnectionPool, ConnectionPool
 from sqlalchemy import create_engine
 
+from ResumeAnalyse.constants import DOC_FILE_SUFFIX, DOCX_FILE_SUFFIX, IMAGE_FILE_SUFFIX_LIST, PDF_FILE_SUFFIX, PPT_FILE_SUFFIX, PPTX_FILE_SUFFIX
+
 """
 全局配置文件，定义了日志配置、API Key、记忆存储配置等全局使用的内容。
 """
-# workspace_root = "/root/program_projects/ResumeSystem/"
-# settings_file = open(workspace_root + "ResumeAnalyse/settings.json", "r", encoding="utf-8")
-# settings = json.load(settings_file)     # 加载全局配置文件内容
-
 # 使用相对路径，兼容打包后的环境，方便部署到各种目录下
 # 首先获取当前模块所在的绝对路径：
 # __file__ 是一个特殊变量，表示当前脚本的路径；os.path.abspath(__file__) 获取当前脚本的绝对路径；os.path.dirname() 获取该路径的目录部分
@@ -96,6 +94,11 @@ llm = ChatZhipuAI(
 # Dashscope API Key 配置
 dashscope_api_key = os.getenv("DASHSCOPE_API_KEY")
 assert dashscope_api_key, "请先在系统环境变量中设置 DASHSCOPE_API_KEY！"
+
+
+# Tavily API Key 配置
+tavily_api_key = os.getenv("TAVILY_API_KEY")
+assert tavily_api_key, "请先在系统环境变量中设置 TAVILY_API_KEY！"
 
 
 """
@@ -191,7 +194,7 @@ PG_DB_URL = f"postgresql://{pg_username}:{pg_password}@{pg_host}:{pg_port}/{pg_d
 # 这里使用 __aenter__() 方法来获取异步上下文管理器中的checkpointer和store对象
 # 并且采用懒加载的方式，只有在需要时才创建对象
 checkpointer: AsyncPostgresSaver = None
-store: AsyncPostgresSaver = None
+store: AsyncPostgresStore = None
 sync_checkpointer: PostgresSaver = None     # 同步版本的checkpointer
 sync_store: PostgresSaver = None           # 同步版本的store
 
@@ -358,6 +361,21 @@ async def get_store_memory(config: RunnableConfig):
     return stored_data
 
 
+# Extractor.extract_file_to_markdown 方法支持处理的文件类型
+support_file_types = [
+    # PDF
+    PDF_FILE_SUFFIX,
+    # DOC
+    DOC_FILE_SUFFIX,
+    # DOCX
+    DOCX_FILE_SUFFIX,
+    # PPT
+    PPT_FILE_SUFFIX,
+    # PPTX
+    PPTX_FILE_SUFFIX,
+    # 图片
+    *IMAGE_FILE_SUFFIX_LIST
+]
 
 
 """

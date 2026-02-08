@@ -1,0 +1,15 @@
+{
+    "basedpyright.analysis.typeCheckingMode": "basic",      // 设置basedpyright的类型检查模式，控制严格程度
+    "basedpyright.analysis.diagnosticMode": "openFilesOnly",  // 设置basedpyright的诊断模式，控制诊断范围
+    "basedpyright.analysis.useLibraryCodeForTypes": true,  // 设置basedpyright的类型推断模式，控制类型推断
+    "basedpyright.analysis.autoSearchPaths": true,  // 设置basedpyright的自动搜索路径模式，控制搜索路径
+
+    "python.testing.autoTestDiscoverOnSaveEnabled": false,  // 禁用保存时自动测试发现
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "${workspaceFolder}/ResumeAnalyse/UnitTest",
+        "-p",
+        "*test*.py"
+    ]
+}

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ROLE_MAP, CANDIDATE_NUMBER, RECRUITER_NUMBER } from "@/utils/constants.js"
+import {ROLE_MAP, CANDIDATE_NUMBER, RECRUITER_NUMBER, SUPPORT_UPLOAD_FILE_TYPES} from "@/utils/constants.js"
 import request from '@/utils/request.js'
 import { formatDate, formatToISO } from "@/utils/tools.js";
 
@@ -1424,13 +1424,27 @@ const openChatBot = () => {
                  要添加新的简历吗？
                </v-card-title>
                <v-card-text class="pa-4">
-                 <p class="text-red mb-4 font-weight-bold">目前仅支持上传PDF文件！</p>
+                 <p class="text-red mb-4 font-weight-bold">目前支持上传的文件格式有：</p>
+                 <div class="d-flex flex-wrap mb-4" style="gap: 8px;">
+                   <v-chip
+                       v-for="type in SUPPORT_UPLOAD_FILE_TYPES"
+                       :key="type"
+                       color="red-darken-4"
+                       text-color="red-darken-2"
+                       size="small"
+                       label
+                       class="font-weight-bold"
+                   >
+                     <v-icon start icon="mdi-file-check-outline"></v-icon>
+                     {{ type.toUpperCase() }}
+                   </v-chip>
+                 </div>
                  <v-file-input
                     v-model="uploadFile"
-                    accept="application/pdf"
+                    :accept="SUPPORT_UPLOAD_FILE_TYPES.map(t => '.' + t).join(',')"
                     label="选择文件"
                     variant="outlined"
-                    prepend-icon="mdi-file-pdf-box"
+                    prepend-icon="mdi-file-upload-outline"
                     show-size
                  ></v-file-input>
                </v-card-text>
@@ -1866,11 +1880,27 @@ const openChatBot = () => {
                        </v-form>
                     </v-window-item>
                     <v-window-item value="upload">
+                       <p class="text-red mb-4 font-weight-bold">目前支持上传的文件格式有：</p>
+                       <div class="d-flex flex-wrap mb-4" style="gap: 8px;">
+                         <v-chip
+                            v-for="type in SUPPORT_UPLOAD_FILE_TYPES"
+                            :key="type"
+                            color="red-darken-4"
+                            text-color="red-darken-2"
+                            size="small"
+                            label
+                            class="font-weight-bold"
+                         >
+                          <v-icon start icon="mdi-file-check-outline"></v-icon>
+                            {{ type.toUpperCase() }}
+                         </v-chip>
+                       </div>
                        <v-file-input
                           v-model="jdUploadFile"
-                          accept="application/pdf"
-                          label="选择JD PDF文件"
+                          :accept="SUPPORT_UPLOAD_FILE_TYPES.map(t => '.' + t).join(',')"
+                          label="选择文件"
                           variant="outlined"
+                          prepend-icon="mdi-file-upload-outline"
                           show-size
                        ></v-file-input>
                     </v-window-item>

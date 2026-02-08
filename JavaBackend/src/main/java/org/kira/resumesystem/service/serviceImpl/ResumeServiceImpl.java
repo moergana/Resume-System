@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -53,6 +54,12 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, Resume> impleme
     private final RabbitTemplate rabbitTemplate;
     private final RedisCuckooFilterTool redisCuckooFilterTool;
 
+    /**
+     * 初始化Resume Cuckoo Filter
+     * 该方法在Spring容器初始化时自动执行
+     * 该方法会检查Redis中是否存在Resume Cuckoo Filter，如果不存在则创建；如果存在则不创建
+     * 该方法还会将数据库中的所有Resume ID添加到Cuckoo Filter中
+     */
     @PostConstruct
     public void initCuckooFilter() {
         // 初始化Resume Cuckoo Filter
@@ -416,10 +423,17 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, Resume> impleme
             log.error("Invalid file name: {}", file_name);
             return Result.fail("The uploaded file is empty.");
         }
-        // 判断是否为pdf格式的文件
-        if (!file_name.endsWith(".pdf")) {
-            log.error("Invalid file format for file: {}. Only PDF files are allowed.", file_name);
-            return Result.fail("Only PDF files are allowed.");
+        // 判断是否上传的文件格式是否在 SUPPORTED_FILE_UPLOAD_SUFFIX_LIST 内
+        boolean valid_upload_file = false;
+        for (String suffix : SUPPORTED_FILE_UPLOAD_SUFFIX_LIST) {
+            if (file_name.endsWith(suffix)) {
+                valid_upload_file = true;
+                break;
+            }
+        }
+        if (!valid_upload_file) {
+            log.error("Invalid file format for file: {}. Valid file formats are: {}", file_name, Arrays.toString(SUPPORTED_FILE_UPLOAD_SUFFIX_LIST));
+            return Result.fail("Invalid file format. Valid file formats are: " + Arrays.toString(SUPPORTED_FILE_UPLOAD_SUFFIX_LIST));
         }
         log.info("Resume file uploading ...");
         String save_path = fileProperties.getResume_save_path();
@@ -509,6 +523,12 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, Resume> impleme
             );
         } catch (Exception e) {
             log.error("Resume upload failed: {}", e.getMessage());
+            // 判断 resume_path 所指向的文件是否存在。如果存在，则删除该文件
+            // 而数据库记录如果存在，可以交给Spring的事务管理来回滚处理
+            File saved_file = new File(resume_path);
+            if (saved_file.exists()) {
+                saved_file.delete();    // 删除本地已经保存的文件
+            }
             throw new RuntimeException("Resume upload failed due to an exception.", e);
         }
         return Result.success("Resume uploaded successfully.", resumeDTO);

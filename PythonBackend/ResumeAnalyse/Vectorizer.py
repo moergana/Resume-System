@@ -82,9 +82,9 @@ def _cosine_sim(a: list[float], b: list[float]) -> float:
     """
     计算余弦相似度similarity
     """
-    a, b = np.array(a), np.array(b)
-    denom = (np.linalg.norm(a) * np.linalg.norm(b))
-    sim = float(a @ b / denom) if denom else 0.0
+    nd_a, nd_b = np.array(a), np.array(b)
+    denom = (np.linalg.norm(nd_a) * np.linalg.norm(nd_b))
+    sim = float(nd_a @ nd_b / denom) if denom else 0.0
     # 将原本的[-1,1]范围归一化到[0,1]范围
     sim = (sim + 1) / 2
     return sim

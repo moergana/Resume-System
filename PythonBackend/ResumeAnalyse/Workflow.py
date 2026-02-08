@@ -9,22 +9,24 @@ from langgraph.graph import StateGraph
 from langgraph.types import Command, Send
 
 from ResumeAnalyse.Analyser import generate_advice, generate_difference
-from ResumeAnalyse.PDFExtractor import pdf_to_markdown
+from ResumeAnalyse.Extractor import extract_file_to_markdown
 from ResumeAnalyse.Summarizer import resume_summarize, JD_summarize
 from ResumeAnalyse.Vectorizer import add_JDs_to_vector_db, handle_resumes_contents, add_resumes_to_vector_db, \
     handle_JD_contents, \
     retrieve_resumes, retrieve_JDs
 from ResumeAnalyse.constants import *
 from ResumeAnalyse.entity.state import GraphState
+from ResumeAnalyse.utils import support_file_types
 
 
-def pdf_extract_and_summarize_node(state: GraphState, config: RunnableConfig):
+def extract_and_summarize_node(state: GraphState, config: RunnableConfig):
     """
     LangGraph 结点
-    从state中尝试获取resume和jd，然后处理PDF文件，提取内容并生成Markdown文本，之后用LLM总结简历和JD内容
-    :param state:
-    :param config:
-    :return:
+    从state中尝试获取resume和jd，然后处理文件，提取内容并生成Markdown文本，之后用LLM总结简历和JD内容
+    文件的格式必须为以下种类之一：PDF、DOCX、PPTX、图片（包括PNG、JPEG、TIFF、BMP、WEBP），结点运行时要对文件格式进行确认
+    :param state: GraphState
+    :param config: RunnableConfig
+    :return: Command
     """
     # 处理简历PDF文件，提取内容并生成Markdown文本，之后用LLM总结简历内容
     resume_path = state.get("resume_path", "")
@@ -49,16 +51,16 @@ def pdf_extract_and_summarize_node(state: GraphState, config: RunnableConfig):
             logging.info("已提供简历摘要内容，跳过简历文件处理步骤。")
     else:
         # 如果提供了简历文件路径，则处理该文件
-        # 判断文件是否为PDF格式
-        if not resume_path.lower().endswith(".pdf"):
-            logging.error("文件格式错误：仅支持PDF格式的简历文件。")
+        # 判断文件是否为支持的格式
+        if not resume_path.lower().endswith(tuple(support_file_types)):
+            logging.error("文件格式错误：支持的文件格式为：" + ", ".join(support_file_types))
             return Command(goto=END,
-                           update={"log_msg": ["简历文件格式错误：仅支持PDF格式。\n"]}
-                           )
-        md = pdf_to_markdown(resume_path)
+                           update={"log_msg": ["简历文件格式错误：支持的文件格式为：" + ", ".join(support_file_types) + "\n"]}
+                        )
+        md = extract_file_to_markdown(resume_path)
         # 记录日志
-        logging.info("成功提取PDF文件内容，生成Markdown文本。")
-        state["log_msg"].append("成功提取PDF文件内容，生成Markdown文本。\n")
+        logging.info("成功提取文件内容，生成Markdown文本。")
+        state["log_msg"].append("成功提取文件内容，生成Markdown文本。\n")
         # 使用LLM总结简历内容
         resume_summary = resume_summarize(md)
         # 将得到的Pydantic对象转换为字符串
@@ -85,16 +87,16 @@ def pdf_extract_and_summarize_node(state: GraphState, config: RunnableConfig):
             logging.info("已提供JD摘要内容，跳过JD文件处理步骤。")
     else:
         # 如果提供了JD文件路径，则处理该文件
-        # 判断文件是否为PDF格式
-        if not JD_path.lower().endswith(".pdf"):
-            logging.error("文件格式错误：仅支持PDF格式的简历文件。")
+        # 判断文件是否为支持的格式
+        if not JD_path.lower().endswith(tuple(support_file_types)):
+            logging.error("文件格式错误：支持的文件格式为：" + ", ".join(support_file_types))
             return Command(goto=END,
-                           update={"log_msg": ["JD文件格式错误：仅支持PDF格式。\n"]}
-                           )
-        md = pdf_to_markdown(JD_path)
+                           update={"log_msg": ["JD文件格式错误：支持的文件格式为：" + ", ".join(support_file_types) + "\n"]}
+                        )
+        md = extract_file_to_markdown(JD_path)
         # 记录日志
-        logging.info("成功提取JD PDF文件内容，生成Markdown文本。")
-        state["log_msg"].append("成功提取JD PDF文件内容，生成Markdown文本。\n")
+        logging.info("成功提取JD文件内容，生成Markdown文本。")
+        state["log_msg"].append("成功提取JD文件内容，生成Markdown文本。\n")
         # 使用LLM总结JD内容
         jd_summary = JD_summarize(md)
         # 将得到的Pydantic对象转换为字符串
@@ -318,7 +320,7 @@ graph = StateGraph(
 """
 定义Graph中的结点
 """
-graph.add_node("pdf_extract_and_summarize_node", pdf_extract_and_summarize_node)
+graph.add_node("pdf_extract_and_summarize_node", extract_and_summarize_node)
 graph.add_node("vectorize_node", vectorize_node)
 graph.add_node("difference_node", difference_node)
 graph.add_node("resume_advise_node", resume_advise_node)

@@ -31,7 +31,7 @@ class GraphState(TypedDict):
     retrieved_resumes: Annotated[List[dict], add]  # 检索到的相关简历列表
     retrieved_jds: Annotated[List[dict], add]  # 检索到的相关JD列表
 
-    state: str  # 当前Graph的执行状态
+    status: str  # 当前Graph的执行状态
     log_msg: Annotated[List[str], add]    # 执行过程中的日志信息
 
 

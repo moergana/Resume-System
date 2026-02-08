@@ -8,5 +8,12 @@
       <jdbc-url>jdbc:postgresql://localhost:5433/resume_system</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="resume_system@localhost-win" uuid="e5e17b3d-f0aa-47dc-bb73-410fc5c00abe">
+      <driver-ref>mysql.8</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
+      <jdbc-url>jdbc:mysql://localhost:3306/resume_system</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>

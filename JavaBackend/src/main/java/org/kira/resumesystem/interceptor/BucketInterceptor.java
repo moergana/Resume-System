@@ -27,7 +27,7 @@ import static org.kira.resumesystem.utils.RedisConstants.BUCKET4J_KEY_PREFIX;
 @Component
 public class BucketInterceptor implements HandlerInterceptor {
     // 以下是基于Bucket4j的令牌桶限流实现代码，支持按IP地址限流
-    // 但是以下方法存在缺陷：当有大量不同IP地址访问时，会导致buckets Map无限增长，可能引发内存问题
+    // 但是以下方法存在缺陷：当有大量不同IP地址访问过后时，会导致buckets Map无限增长，可能引发内存溢出问题
     // 同时，由于使用的是内存中的Map，无法在多实例部署时共享限流状态
     // 因此在生产环境中，建议使用分布式限流方案，如使用Redis等外部存储来维护限流状态
 

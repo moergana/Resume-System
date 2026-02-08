@@ -9,6 +9,10 @@ export const ROLE_MAP = new Map([
     [RECRUITER_NUMBER, '招聘者']
 ])
 
+export const SUPPORT_UPLOAD_FILE_TYPES = [
+    'pdf', 'doc', 'docx', 'ppt', 'pptx'
+]
+
 // 分析请求处理状态映射表
 // 需要注意：{}定义的对象是普通对象，且不可迭代，并且键会被自动转换为字符串
 export const STATUS_MAP = {

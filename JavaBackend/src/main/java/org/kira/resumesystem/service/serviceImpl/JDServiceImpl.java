@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -52,6 +53,11 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
     private final RabbitTemplate rabbitTemplate;
     private final RedisCuckooFilterTool redisCuckooFilterTool;
 
+    /**
+     * 初始化JD Cuckoo Filter
+     * 该方法会在服务启动时被调用
+     * 会将数据库中所有的JD ID添加到Cuckoo Filter中
+     */
     @PostConstruct
     public void initCuckooFilter() {
         // 初始化JD Cuckoo Filter
@@ -436,15 +442,22 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
             log.error("Invalid file name: {}", file_name);
             return Result.fail("The uploaded file is empty.");
         }
-        // 判断是否为pdf格式的文件
-        if (!file_name.endsWith(".pdf")) {
-            log.error("Invalid file format for file: {}. Only PDF files are allowed.", file_name);
-            return Result.fail("Only PDF files are allowed.");
+        // 判断是否文件的格式是否在 SUPPORTED_FILE_UPLOAD_SUFFIX_LIST 内
+        boolean is_supported = false;
+        for (String suffix : SUPPORTED_FILE_UPLOAD_SUFFIX_LIST) {
+            if (file_name.endsWith(suffix)) {
+                is_supported = true;
+                break;
+            }
+        }
+        if (!is_supported) {
+            log.error("Invalid file format for file: {}. Valid file formats are: {}", file_name, Arrays.toString(SUPPORTED_FILE_UPLOAD_SUFFIX_LIST));
+            return Result.fail("Invalid file format. Valid file formats are: " + Arrays.toString(SUPPORTED_FILE_UPLOAD_SUFFIX_LIST));
         }
         log.info("JD file uploading ...");
         String save_path = fileProperties.getJd_save_path();
-        // 简历上传后采用本地保存
-        // 首先检查简历保存的根目录是否存在
+        // JD上传后采用本地保存
+        // 首先检查JD保存的根目录是否存在
         File dir = new File(save_path);
         if (!dir.exists()) {
             log.info("JD save root dir doesn't exist. Trying to create: {}", save_path);
@@ -467,7 +480,7 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
                 return Result.fail("Failed to create user JD save directory.");
             }
         }
-        // 构建简历文件的保存路径
+        // 构建JD文件的保存路径
         int extension_pos = file_name.lastIndexOf(".");
         String new_file_name = file_name.substring(0, extension_pos) + "_" + UUID.randomUUID() + file_name.substring(extension_pos);    // 为避免文件名冲突，在文件名后（扩展名前）添加UUID
         path = Path.of(path.toString(), new_file_name);
@@ -481,7 +494,7 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
         jd.setCreateTime(LocalDateTime.now());
         jd.setUpdateTime(LocalDateTime.now());
         try {
-            // 将新的简历文件的相关信息写入数据库表
+            // 将新的JD文件的相关信息写入数据库表
             boolean success = save(jd);     // 保存成功后，save方法会将生成的ID回填到jd对象中
             if (!success) {
                 log.error("Failed to save JD info to database for user ID: {}", UserThreadLocal.get());
@@ -495,17 +508,18 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
         }
 
         try {
-            // 保存简历文件到本地磁盘
+            // 保存JD文件到本地磁盘
             file.transferTo(new File(jd_path));
             log.info("JD uploaded successfully: {}", file_name);
             log.info("Saved JD file to disk at path: {}", jd_path);
         } catch (Exception e) {
             log.error("JD upload failed: {}", e.getMessage());
+            // 判断
             throw new FileException("JD upload failed due to an exception.", e);
         }
 
         try {
-            // 发送一个消息到rabbitmq，通知向量数据库将新的简历信息嵌入
+            // 发送一个消息到rabbitmq，通知向量数据库将新的JD信息嵌入
             // 首先要构造消息体ResumeAnalysisDTO对象
             ResumeAnalysisDTO resumeAnalysisDTO = new ResumeAnalysisDTO();
             resumeAnalysisDTO.setUserId(UserThreadLocal.get());     // 设置用户ID
@@ -530,6 +544,12 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
             log.info("JD upload message sent to RabbitMQ successfully for JD ID: {}", resumeAnalysisDTO.getJdID());
         } catch (Exception e) {
             log.error("JD upload failed: {}", e.getMessage());
+            // 判断jd_path指向的路径是否存在。如果存在，则删除该文件
+            // 而如果数据库存在记录，则交给Spring的事务管理回滚处理
+            File saved_file = new File(jd_path);
+            if (saved_file.exists()) {
+                saved_file.delete();    // 删除本地已经保存的JD文件
+            }
             throw new RuntimeException("JD upload failed due to an exception.", e);
         }
         return Result.success("JD uploaded successfully.", jdDTO);

@@ -11,7 +11,7 @@ from ResumeAnalyse.entity.summary import ResumeSummary, JDSummary
 
 # from ResumeAnalyse.PDFExtractor import markdown_res
 
-Model_Name = "mistralai/mistral-small-3.1-24b-instruct:free"
+Model_Name = "openrouter/free"
 Base_URL = "https://openrouter.ai/api/v1"
 summary_llm = init_chat_model(
     model=Model_Name,

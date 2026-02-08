@@ -49,10 +49,10 @@ conversation_system_prompt_template = PromptTemplate.from_template(template=
 
 1. 用户的身份：{user_role}
 
-2. 用户的简历内容概述如下：
+2. 用户提供的简历内容概述如下：
 {resume_summary_text}
 
-3. 用户的目标职位描述内容概述如下：
+3. 用户提供的职位描述内容概述如下：
 {jd_summary_text}
 
 4. 用户经过智能简历分析系统，目前得到的分析结果如下：
@@ -809,6 +809,7 @@ def start_bot_interface():
     """
     # 自定义给 Chatbot 组件
     chatbot = gradio.Chatbot(
+        type="messages",
         render_markdown=True,  # 启用 Markdown 渲染
         height=600,  # 聊天区域高度设置为600像素
         show_copy_button=True,  # 显示复制按钮
@@ -828,6 +829,7 @@ def start_bot_interface():
         chatbot=chatbot,
         fill_height=True,  # 让聊天区域填满可用高度
         textbox=textbox,
+        type="messages",
         title="🤖 简历-职位 分析助理",
         description="一个基于智能体的简历-职位分析助手，能够帮助你详细分析简历和职位描述的匹配度，并提供给你有价值的建议和指导。",
         examples=[
@@ -835,7 +837,7 @@ def start_bot_interface():
             ["根据我的简历，推荐一下适合我投递的公司"],
             ["根据我的简历和目标职位描述，你觉得我在面试中需要注意哪些方面？"],
         ],
-        theme="gradio/dark",  # 1. 先设置一个好的暗色主题作为基础
+        theme="soft",  # 1. 先设置一个好的暗色主题作为基础
         css=custom_css,  # 2. 再用自定义CSS进行自定义
     )
     # 注册 unload 事件，该事件在用户关闭标签页时触发，会自动调用传入的回调方法

@@ -39,7 +39,7 @@ class WorkflowTestCase(unittest.TestCase):
             "retrieved_resumes": [],
             "retrieved_jds": [],
 
-            "state": "",
+            "status": "",
             "log_msg": [],
         }
         final_state = graph_executor.invoke(initial_state)
@@ -70,7 +70,7 @@ class WorkflowTestCase(unittest.TestCase):
             "retrieved_resumes": [],
             "retrieved_jds": [],
 
-            "state": "",
+            "status": "",
             "log_msg": [],
         }
         print(f"initial_state(JSON):\n{json.dumps(initial_state, ensure_ascii=False, indent=2)}\n")
@@ -111,7 +111,7 @@ class WorkflowTestCase(unittest.TestCase):
             "retrieved_resumes": [],
             "retrieved_jds": [],
 
-            "state": "",
+            "status": "",
             "log_msg": [],
         }
         print(f"initial_state(JSON):\n{json.dumps(initial_state, ensure_ascii=False, indent=2)}\n")
