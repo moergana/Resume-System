@@ -15,13 +15,13 @@ public class Constants {
     public static final String PPTX_TILE_SUFFIX = ".pptx";  // PPTX文件后缀名
     // 支持的图片文件后缀名列表
     public static final String[] IMAGE_FILE_SUFFIX_LIST = new String[] {
-        ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"
+        ".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".webp"
     };
     // 支持上传的文件后缀名列表
     public static final String[] SUPPORTED_FILE_UPLOAD_SUFFIX_LIST = new String[] {
         PDF_FILE_SUFFIX, DOC_FILE_SUFFIX, DOCX_FILE_SUFFIX, PPT_TILE_SUFFIX, PPTX_TILE_SUFFIX
     };
-    
+
     // 简历分析状态对应的整数值
     public static final Integer RESUME_ANALYSIS_WAITING_STATUS = 0;    // 等待分析状态
     public static final Integer RESUME_ANALYSIS_ANALYSING_STATUS = 1;   // 分析中状态
