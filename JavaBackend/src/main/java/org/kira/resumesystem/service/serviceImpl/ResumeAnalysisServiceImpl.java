@@ -19,6 +19,8 @@ import org.kira.resumesystem.service.IResumeAnalysisService;
 import org.kira.resumesystem.utils.FileTool;
 import org.kira.resumesystem.utils.RedisCuckooFilterTool;
 import org.kira.resumesystem.utils.UserThreadLocal;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -44,6 +46,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
     private final RabbitTemplate rabbitTemplate;
     private final ResumeAnalysisVOMapper resumeAnalysisVOMapper;
     private final RedisCuckooFilterTool redisCuckooFilterTool;
+    private final RedissonClient redissonClient;
 
     @PostConstruct
     public void initCuckooFilter() {
@@ -287,6 +290,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
 
     /**
      * 获取指定ID的简历分析记录在数据库中的全部信息
+     * 先尝试从Redis缓存中获取简历分析记录信息；如果缓存不存在，则尝试从数据库中获取简历分析记录信息
      * @param id 简历分析记录ID
      * @return 结果对象，包含简历分析记录，类型为ResumeAnalysis
      */
@@ -309,24 +313,63 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
             stringRedisTemplate.expire(redisKey, COMMON_NULL_TTL, COMMON_NULL_TTL_UNIT);
             return Result.fail("Resume analysis record not found.");
         }
-        else {
-            // 4. 如果Redis中不存在该缓存，则查询数据库获取ResumeAnalysis对象
-            resumeAnalysis = lambdaQuery()
-                    .eq(ResumeAnalysis::getId, id)
-                    .one();
+        // 4. 如果Redis中不存在该缓存，则查询数据库获取ResumeAnalysis对象
+        // 这可能涉及到缓存的重构，为了避免缓存雪崩和缓存击穿，这里使用加锁的方式，保证只有一个线程去重构缓存
+        // 4.1. 尝试获取Redisson的分布式锁
+        String lockKey = RESUME_ANALYSIS_LOCK_KEY + id;
+        RLock lock = redissonClient.getLock(lockKey);
+        try {
+            // 尝试获取分布式锁，设置等待时间、锁的持有时间以及锁的释放时间
+            boolean isLockAcquired = lock.tryLock(RESUME_ANALYSIS_LOCK_WAIT_TIME, RESUME_ANALYSIS_LOCK_TTL, RESUME_ANALYSIS_LOCK_TTL_UNIT);
+            if (!isLockAcquired) {
+                // 如果获取失败，则说明有其他线程正在处理该请求，直接返回未找到结果
+                log.info("Failed to acquire lock for resume analysis record with lock key {}.", lockKey);
+                return Result.fail("Timeout to get resume analysis record! Please try again later.");
+            }
+            log.info("Lock acquired for resume analysis record with lock key {}. Double checking cache now.", lockKey);
+            // 4.2. 再次检查该缓存是否已经存在
+            resumeAnalysisJSON = stringRedisTemplate.opsForValue().get(redisKey);
+            if (resumeAnalysisJSON != null && !resumeAnalysisJSON.isEmpty()) {
+                // 4.2.1. 如果缓存存在，则直接获取缓存的ResumeAnalysis对象
+                log.info("Found resume analysis record in Redis cache with key: {} (cache hit after lock acquisition).", redisKey);
+                resumeAnalysis = JSONUtil.toBean(resumeAnalysisJSON, ResumeAnalysis.class);
+            }
+            else if (resumeAnalysisJSON != null) {
+                // 4.2.2. 如果缓存存在但值为空字符串，则说明该记录不存在，命中了空缓存，直接返回失败结果
+                log.info("Resume analysis record not found in Redis cache with key: {} (NULL cache hit).", redisKey);
+                // 刷新空缓存的过期时间
+                stringRedisTemplate.expire(redisKey, COMMON_NULL_TTL, COMMON_NULL_TTL_UNIT);
+                return Result.fail("Resume analysis record not found.");
+            }
+            else {
+                // 4.3. 如果缓存不存在，则查询数据库获取ResumeAnalysis对象
+                resumeAnalysis = lambdaQuery()
+                        .eq(ResumeAnalysis::getId, id)
+                        .one();
+                if (resumeAnalysis == null) {
+                    // 5. 如果数据库中也不存在该记录，则返回失败结果
+                    log.info("Resume analysis record not found in database with ID {}.", id);
+                    // 为防止缓存穿透，写入空缓存到Redis，并设置较短的过期时间
+                    stringRedisTemplate.opsForValue().set(redisKey, "", COMMON_NULL_TTL, COMMON_NULL_TTL_UNIT);
+                    return Result.fail("Resume analysis record not found.");
+                }
+                log.info("Successfully get resume analysis record with ID {}.", id);
+                // 6. 将resumeAnalysis对象缓存到Redis中，并设置适当的过期时间
+                String resumeAnalysisToCache = JSONUtil.toJsonStr(resumeAnalysis);
+                stringRedisTemplate.opsForValue().set(redisKey, resumeAnalysisToCache, RESUME_ANALYSIS_TTL, RESUME_ANALYSIS_TTL_UNIT);
+            }
         }
-        if (resumeAnalysis == null) {
-            // 5. 如果数据库中也不存在该记录，则返回失败结果
-            log.info("Resume analysis record not found in database with ID {}.", id);
-            // 为防止缓存穿透，写入空缓存到Redis，并设置较短的过期时间
-            stringRedisTemplate.opsForValue().set(redisKey, "", COMMON_NULL_TTL, COMMON_NULL_TTL_UNIT);
-            return Result.fail("Resume analysis record not found.");
+        catch (Exception e) {
+            log.error("Error getting resume analysis record with ID {}: {}", id, e.getMessage());
+            return Result.fail("Error getting resume analysis record.");
         }
-        log.info("Successfully get resume analysis record with ID {}.", id);
-        // 4. 将resumeAnalysis对象缓存到Redis中，并设置适当的过期时间
-        String resumeAnalysisToCache = JSONUtil.toJsonStr(resumeAnalysis);
-        stringRedisTemplate.opsForValue().set(redisKey, resumeAnalysisToCache, RESUME_ANALYSIS_TTL, RESUME_ANALYSIS_TTL_UNIT);
-        return Result.success("Successfully get resume analysis record with ID: " + id + ".", resumeAnalysis);
+        finally {
+            // 7. 释放分布式锁。只有当前线程持有该锁时，才释放该锁
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
+        return Result.success("Resume analysis record found successfully.", resumeAnalysis);
     }
 
     /**

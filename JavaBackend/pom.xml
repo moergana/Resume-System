@@ -116,6 +116,15 @@
             <artifactId>redisson</artifactId>
             <version>3.23.3</version>
         </dependency>
+        <!-- redisson-spring-boot-starter -->
+        <!-- 由于和spring-data-redis底层使用的lettuce会产生冲突
+             会将LettuceConnectionFactory换成RedissonConnectionFactory，而我编写的CuckooFilter需要LettuceConnectionFactory
+             所以不使用redisson-spring-boot-starter，转而使用原版的redisson -->
+        <!-- <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson-spring-boot-starter</artifactId>
+            <version>3.17.7</version>
+        </dependency> -->
         <!--AOP Proxy needs dependency "aspectjweaver"-->
         <dependency>
             <groupId>org.aspectj</groupId>

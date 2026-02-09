@@ -15,6 +15,8 @@ import org.kira.resumesystem.mapper.JDMapper;
 import org.kira.resumesystem.service.IJDService;
 import org.kira.resumesystem.utils.RedisCuckooFilterTool;
 import org.kira.resumesystem.utils.UserThreadLocal;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.io.FileSystemResource;
@@ -52,6 +54,7 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
     private final StringRedisTemplate stringRedisTemplate;
     private final RabbitTemplate rabbitTemplate;
     private final RedisCuckooFilterTool redisCuckooFilterTool;
+    private final RedissonClient redissonClient;
 
     /**
      * 初始化JD Cuckoo Filter
@@ -244,6 +247,7 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
 
     /**
      * 根据ID获取职位描述（JD）在数据库中的全部信息
+     * 先尝试从Redis缓存中获取职位描述（JD）信息；如果缓存不存在，则尝试从数据库中获取职位描述（JD）信息
      * @param id 职位描述ID
      * @return Result 包含职位描述信息的结果对象，类型为JD
      */
@@ -266,22 +270,61 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
             stringRedisTemplate.expire(redisKey, COMMON_NULL_TTL, COMMON_NULL_TTL_UNIT);
             return Result.fail("JD not found.");
         }
-        else {
-            // 4. 如果Redis中不存在该JD的缓存信息，则查询数据库获取JD信息
-            log.info("JD not found in Redis cache with key: {}. Fetching JD from database with ID: {}...", redisKey, id);
-            jd = getById(id);
+        // 4. 如果Redis中不存在该JD的缓存信息，则查询数据库获取JD信息
+        // 这可能涉及到缓存的重构，为了避免缓存雪崩和缓存击穿，这里使用加锁的方式，保证只有一个线程去重构缓存
+        // 4.1. 尝试获取Redisson的分布式锁
+        String lockKey = JD_LOCK_KEY + id;
+        RLock lock = redissonClient.getLock(lockKey);
+        try {
+            // 尝试获取锁，设置等待时间、锁的持有时间以及锁的释放时间
+            boolean isLockAcquired = lock.tryLock(JD_LOCK_WAIT_TIME, JD_LOCK_TTL, JD_LOCK_TTL_UNIT);
+            if (!isLockAcquired) {
+                // 如果获取失败，则说明有其他线程正在处理该请求，直接返回未找到结果
+                log.warn("Failed to acquire lock for JD with lock key: {}.", lockKey);
+                return Result.fail("Timeout to get JD! Please try again later.");
+            }
+            // 4.2. 尝试获取锁成功，再次检查缓存是否已经存在
+            log.info("Lock acquired for JD with lock key: {}. Double checking cache now.", lockKey);
+            jdJSON = stringRedisTemplate.opsForValue().get(redisKey);
+            if (jdJSON != null && !jdJSON.isEmpty()) {
+                // 4.2.1. 如果缓存存在，则直接获取缓存的JD对象
+                log.info("JD found in Redis cache with key: {}", redisKey);
+                jd = JSONUtil.toBean(jdJSON, JD.class);
+            }
+            else if (jdJSON != null) {
+                // 4.2.2. 如果缓存存在但为空字符串，说明之前查询过该id但不存在对应的JD，命中了空缓存，直接返回未找到结果
+                log.info("JD not found in Redis cache with key: {} (NULL cache hit).", redisKey);
+                // 刷新空缓存的过期时间
+                stringRedisTemplate.expire(redisKey, COMMON_NULL_TTL, COMMON_NULL_TTL_UNIT);
+                return Result.fail("JD not found.");
+            }
+            else {
+                // 4.3. 如果缓存不存在，则查询数据库获取JD信息
+                log.info("JD not found in Redis cache with key: {}. Fetching JD from database with ID: {}...", redisKey, id);
+                jd = getById(id);
+                if (jd == null) {
+                    // 5. 如果数据库中也不存在该JD信息，则返回JD未找到的结果
+                    log.info("JD not found in database with ID: {}", id);
+                    // 为防止缓存穿透，将该JD的空信息缓存到Redis，设置较短的过期时间
+                    stringRedisTemplate.opsForValue().set(redisKey, "", COMMON_NULL_TTL, COMMON_NULL_TTL_UNIT);
+                    return Result.fail("JD not found.");
+                }
+                log.info("JD found with ID: {}", id);
+                // 6. 将该JD信息缓存到Redis，设置适当的过期时间
+                String jdToCache = JSONUtil.toJsonStr(jd);
+                stringRedisTemplate.opsForValue().set(redisKey, jdToCache, JD_TTL, JD_TTL_UNIT);
+            }
         }
-        if (jd == null) {
-            // 5. 如果数据库中也不存在该JD信息，则返回JD未找到的结果
-            log.info("JD not found in database with ID: {}", id);
-            // 为防止缓存穿透，将该JD的空信息缓存到Redis，设置较短的过期时间
-            stringRedisTemplate.opsForValue().set(redisKey, "", COMMON_NULL_TTL, COMMON_NULL_TTL_UNIT);
-            return Result.fail("JD not found.");
+        catch (Exception e) {
+            log.error("Error fetching JD with ID: {}", id, e);
+            return Result.fail("Error fetching JD.");
         }
-        log.info("JD found with ID: {}", id);
-        // 6. 将该JD信息缓存到Redis，设置适当的过期时间
-        String jdToCache = JSONUtil.toJsonStr(jd);
-        stringRedisTemplate.opsForValue().set(redisKey, jdToCache, JD_TTL, JD_TTL_UNIT);
+        finally {
+            // 7. 释放分布式锁。只有当前线程持有锁时，才释放锁，避免误删其他线程持有的锁
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
         return Result.success("JD found successfully.", jd);
     }
 

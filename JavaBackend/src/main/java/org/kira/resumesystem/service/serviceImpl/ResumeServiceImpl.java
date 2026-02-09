@@ -15,6 +15,8 @@ import org.kira.resumesystem.mapper.ResumeMapper;
 import org.kira.resumesystem.service.IResumeService;
 import org.kira.resumesystem.utils.RedisCuckooFilterTool;
 import org.kira.resumesystem.utils.UserThreadLocal;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.io.FileSystemResource;
@@ -53,6 +55,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, Resume> impleme
     private final StringRedisTemplate stringRedisTemplate;
     private final RabbitTemplate rabbitTemplate;
     private final RedisCuckooFilterTool redisCuckooFilterTool;
+    private final RedissonClient redissonClient;
 
     /**
      * 初始化Resume Cuckoo Filter
@@ -231,6 +234,7 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, Resume> impleme
 
     /**
      * 根据简历ID获取简历在数据库中的全部信息
+     * 先尝试从Redis缓存中获取简历信息；如果缓存不存在，则尝试从数据库中获取简历信息
      * @param id 简历ID
      * @return Result 包含简历基本信息的结果对象，类型为Resume
      */
@@ -253,21 +257,61 @@ public class ResumeServiceImpl extends ServiceImpl<ResumeMapper, Resume> impleme
             stringRedisTemplate.expire(redisKey, COMMON_NULL_TTL, COMMON_NULL_TTL_UNIT);
             return Result.fail("Resume not found.");
         }
-        else {
-            // 4. 如果缓存不存在，则尝试查询数据库获取简历信息
-            log.info("Resume not found in Redis cache with key: {}. Fetching resume from database with ID: {}.", redisKey, id);
-            resume = getById(id);
+        // 4. 如果缓存不存在，则尝试查询数据库获取简历信息
+        // 但是这可能涉及到缓存的重构，为了避免缓存雪崩和缓存击穿，这里使用加锁的方式，保证只有一个线程去重构缓存
+        // 4.1. 现在，先尝试获取Redisson的分布式锁
+        log.info("Attempting to acquire lock for key: {} to query database.", redisKey);
+        String lockKey = RESUME_LOCK_KEY + id;
+        RLock lock = redissonClient.getLock(lockKey);
+        try {
+            // 尝试获取锁，设置等待时间、锁的持有时间以及锁的释放时间
+            boolean isLockAcquired = lock.tryLock(RESUME_LOCK_WAIT_TIME, RESUME_LOCK_TTL, RESUME_LOCK_TTL_UNIT);
+            if (!isLockAcquired) {
+                // 如果获取失败，则说明有其他线程正在处理该请求，直接返回未找到结果
+                log.warn("Failed to acquire lock for resume with lock key: {}.", lockKey);
+                return Result.fail("Timeout to get resume! Please try again later.");
+            }
+            log.info("Lock acquired for resume with lock key: {}. Double checking cache now.", lockKey);
+            // 4.2. 再次检查该缓存是否已经存在
+            resumeJSON = stringRedisTemplate.opsForValue().get(redisKey);
+            if (resumeJSON != null && !resumeJSON.isEmpty()) {
+                // 4.2.1. 如果缓存存在，则直接获取缓存的Resume对象
+                log.info("Resume found in Redis cache with key: {}", redisKey);
+                resume = JSONUtil.toBean(resumeJSON, Resume.class);
+            }
+            else if (resumeJSON != null) {
+                // 4.2.2. 如果缓存存在但为空字符串，说明之前查询过该id但不存在对应的简历，命中了空缓存，直接返回未找到结果
+                log.info("Resume not found in Redis cache with key: {} (NULL cache hit).", redisKey);
+                // 刷新空缓存的过期时间
+                stringRedisTemplate.expire(redisKey, COMMON_NULL_TTL, COMMON_NULL_TTL_UNIT);
+                return Result.fail("Resume not found.");
+            }
+            else {
+                // 4.3. 缓存依旧不存在，仍然需要查询数据库获取简历信息
+                log.info("Resume not found in Redis cache with key: {}. Fetching resume from database with ID: {}.", redisKey, id);
+                resume = getById(id);
+                if (resume == null) {
+                    log.info("Resume not found in database with ID: {}", id);
+                    // 5. 未能找到该id对应的简历。为避免缓存穿透，缓存一个空值，设置较短的过期时间
+                    stringRedisTemplate.opsForValue().set(redisKey, "", COMMON_NULL_TTL, COMMON_NULL_TTL_UNIT);
+                    return Result.fail("Resume not found.");
+                }
+                log.info("Resume found with ID: {}", id);
+                // 6. 将查询到的简历信息缓存到Redis中，设置合理的过期时间
+                String resumeToCache = JSONUtil.toJsonStr(resume);
+                stringRedisTemplate.opsForValue().set(redisKey, resumeToCache, RESUME_TTL, RESUME_TTL_UNIT);
+            }
         }
-        if (resume == null) {
-            log.info("Resume not found in database with ID: {}", id);
-            // 5. 未能找到该id对应的简历。为避免缓存穿透，缓存一个空值，设置较短的过期时间
-            stringRedisTemplate.opsForValue().set(redisKey, "", COMMON_NULL_TTL, COMMON_NULL_TTL_UNIT);
-            return Result.fail("Resume not found.");
+        catch (Exception e) {
+            log.error("Error while getting resume with ID: {}", id, e);
+            return Result.fail("Error while getting resume.");
         }
-        log.info("Resume found with ID: {}", id);
-        // 6. 将查询到的简历信息缓存到Redis中，设置合理的过期时间
-        String resumeToCache = JSONUtil.toJsonStr(resume);
-        stringRedisTemplate.opsForValue().set(redisKey, resumeToCache, RESUME_TTL, RESUME_TTL_UNIT);
+        finally {
+            // 一定要保证释放分布式锁。并且要判断是否是当前线程持有锁，避免误删锁
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
         return Result.success("Resume found successfully.", resume);
     }
 

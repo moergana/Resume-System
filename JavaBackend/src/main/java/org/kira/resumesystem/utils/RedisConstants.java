@@ -36,16 +36,28 @@ public class RedisConstants {
     public static final String RESUME_KEY = "resume:"; // 简历详情缓存的key前缀
     public static final Long RESUME_TTL = 1L;   // 1 小时
     public static final TimeUnit RESUME_TTL_UNIT = TimeUnit.HOURS;
+    public static final String RESUME_LOCK_KEY = "resume:lock:"; // 简历分布式锁key前缀
+    public static final Long RESUME_LOCK_WAIT_TIME = 10L;   // 10 秒
+    public static final Long RESUME_LOCK_TTL = 10L;   // 10 秒
+    public static final TimeUnit RESUME_LOCK_TTL_UNIT = TimeUnit.SECONDS;
 
     // JD在Redis中的缓存key前缀和TTL
     public static final String JD_KEY = "jd:"; // JD详情缓存的key前缀
     public static final Long JD_TTL = 1L;   // 1 小时
     public static final TimeUnit JD_TTL_UNIT = TimeUnit.HOURS;
+    public static final String JD_LOCK_KEY = "jd:lock:"; // JD分布式锁key前缀
+    public static final Long JD_LOCK_WAIT_TIME = 10L;   // 10 秒
+    public static final Long JD_LOCK_TTL = 10L;   // 10 秒
+    public static final TimeUnit JD_LOCK_TTL_UNIT = TimeUnit.SECONDS;
 
     // 简历分析结果在Redis中的缓存key前缀和TTL
     public static final String RESUME_ANALYSIS_KEY = "resume_analysis:"; // 简历分析结果key前缀
     public static final Long RESUME_ANALYSIS_TTL = 1L;   // 1 天
     public static final TimeUnit RESUME_ANALYSIS_TTL_UNIT = TimeUnit.DAYS;
+    public static final String RESUME_ANALYSIS_LOCK_KEY = "resume_analysis:lock:"; // 简历分析分布式锁key前缀
+    public static final Long RESUME_ANALYSIS_LOCK_WAIT_TIME = 10L;   // 10 秒
+    public static final Long RESUME_ANALYSIS_LOCK_TTL = 10L;   // 10 秒
+    public static final TimeUnit RESUME_ANALYSIS_LOCK_TTL_UNIT = TimeUnit.SECONDS;
 
     public static final String MATCH_RESULT_KEY = "match_result:"; // 简历JD匹配结果key前缀
     public static final String JD_MATCH_RESULT_KEY = "jd_match_result:"; // JD匹配结果key前缀
