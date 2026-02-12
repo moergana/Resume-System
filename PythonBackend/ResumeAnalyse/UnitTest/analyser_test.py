@@ -27,7 +27,7 @@ sample_jd = f"""职位名称: "前端开发工程师"
 """
 
 
-class AdviserTestCase(unittest.TestCase):
+class AnalyserTestCase(unittest.TestCase):
     def test_something(self):
         d = {
             "a": 1,

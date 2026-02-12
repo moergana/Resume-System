@@ -1,10 +1,13 @@
 import logging
+
+from pika.channel import Channel
+from pika.spec import Basic, BasicProperties
 import ResumeAnalyse.rabbitmq.utils
 from ResumeAnalyse.Vectorizer import resume_vectordb, JD_vectordb
 from ResumeAnalyse.entity.resume_analysis_dto import ResumeAnalysisDTO
 
 
-def resume_delete_callback(ch, method, properties, body):
+def resume_delete_callback(ch: Channel, method: Basic.Deliver, properties: BasicProperties, body: bytes):
     """
     Callback function to handle resume delete requests from RabbitMQ.
     :param ch: Channel
@@ -41,7 +44,7 @@ def resume_delete_callback(ch, method, properties, body):
         return
 
 
-def jd_delete_callback(ch, method, properties, body):
+def jd_delete_callback(ch: Channel, method: Basic.Deliver, properties: BasicProperties, body: bytes):
     """
     Callback function to handle JD delete requests from RabbitMQ.
     :param ch: Channel

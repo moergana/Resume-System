@@ -2,18 +2,13 @@ import json
 import os
 import unittest
 import redis
-from langchain.agents import create_agent
-from langchain.chat_models import init_chat_model
-from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from langgraph.store.postgres import AsyncPostgresStore
 
-from ResumeAnalyse import utils
-from ResumeAnalyse.Conversation import mcp_client
 from ResumeAnalyse.utils import PG_DB_URL, redis_host, redis_port, redis_db, redis_decode_responses, redis_password
 
 
-class MyTestCase(unittest.TestCase):
+class AnyTestCase(unittest.TestCase):
     def test_os_envs(self):
         key = os.getenv("GEMINI_API_KEY")
         print(key)

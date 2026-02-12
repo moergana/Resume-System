@@ -7,24 +7,7 @@ from pika.connection import ConnectionParameters
 from pika.credentials import PlainCredentials
 
 from ResumeAnalyse.entity.advice import Advice
-
-test_mq_parameters = ConnectionParameters(
-    host='localhost',
-    port=5672,
-    virtual_host="/resumesys",
-    credentials=PlainCredentials(
-        username='resumesys', password='resume123'
-    ),
-)
-
-test_connection = BlockingConnection(test_mq_parameters)
-
-ANALYSE_EXCHANGE_NAME = "analyse.direct"
-ANALYSE_REQUEST_QUEUE_NAME = "analyse.request.queue"
-ANALYSE_REQUEST_ROUTING_KEY = "analyse.request.routing"
-
-ANALYSE_RESULT_QUEUE_NAME = "analyse.result.queue"
-ANALYSE_RESULT_ROUTING_KEY = "analyse.result.routing"
+from ResumeAnalyse.rabbitmq.constants import *
 
 
 def consume_callback(ch, method, properties, body):
@@ -36,14 +19,26 @@ def consume_callback(ch, method, properties, body):
     )
 
 
-class MyTestCase(unittest.TestCase):
+class RabbitMQTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        test_mq_parameters = ConnectionParameters(
+            host='localhost',
+            port=5672,
+            virtual_host="/resumesys",
+            credentials=PlainCredentials(
+                username='resumesys', password='resume123'
+            ),
+        )
+        cls.test_connection = BlockingConnection(test_mq_parameters)
+
     def test_rabbitmq_connection(self):
-        channel = test_connection.channel()
+        channel = self.test_connection.channel()
         print("成功连接到 RabbitMQ 服务器并创建了一个频道。")
         channel.close()
 
     def test_rabbitmq_ops(self):
-        channel = test_connection.channel()
+        channel = self.test_connection.channel()
 
         # 声明一个队列
         # queue_name = 'test_queue'
@@ -70,7 +65,7 @@ class MyTestCase(unittest.TestCase):
         channel.close()
 
     def test_add_listener(self):
-        channel = test_connection.channel()
+        channel = self.test_connection.channel()
         channel.basic_consume(
             queue=ANALYSE_REQUEST_QUEUE_NAME,
             on_message_callback=consume_callback,
@@ -90,7 +85,7 @@ class MyTestCase(unittest.TestCase):
             improvement_suggestions="It is a great resume overall.",
             job_hunting_tips="Keep applying to relevant positions and networking.",
         )
-        channel = test_connection.channel()
+        channel = self.test_connection.channel()
         channel.basic_publish(
             exchange=ANALYSE_EXCHANGE_NAME,
             routing_key=ANALYSE_RESULT_ROUTING_KEY,
@@ -113,13 +108,13 @@ class MyTestCase(unittest.TestCase):
         msg = {
             "id": 123
         }
-        msg["id"] = str(msg["id"])
-        print(json.dumps(msg))
-        channel = test_connection.channel()
+        msg_json = json.dumps(msg)
+        print(msg_json)
+        channel = self.test_connection.channel()
         channel.basic_publish(
             exchange=ANALYSE_EXCHANGE_NAME,
             routing_key=ANALYSE_RESULT_ROUTING_KEY,
-            body=json.dumps(msg)
+            body=msg_json
         )
         channel.close()
 

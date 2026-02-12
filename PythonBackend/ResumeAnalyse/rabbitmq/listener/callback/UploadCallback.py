@@ -5,9 +5,11 @@ from ResumeAnalyse.constants import RESUME_ANALYSIS_FINISHED_STATUS, RESUME_ANAL
 from ResumeAnalyse.entity.resume_analysis_dto import ResumeAnalysisDTO
 from ResumeAnalyse.rabbitmq.constants import *
 from ResumeAnalyse.rabbitmq.utils import generate_jd_summary_text
+from pika.channel import Channel
+from pika.spec import Basic, BasicProperties
 
 
-def resume_upload_callback(ch, method, properties, body):
+def resume_upload_callback(ch: Channel, method: Basic.Deliver, properties: BasicProperties, body: bytes):
     """
     Callback function to handle resume upload messages from RabbitMQ.
     负责处理请求类型：REQUEST_RESUME_UPLOAD
@@ -72,7 +74,7 @@ def resume_upload_callback(ch, method, properties, body):
         return
 
 
-def jd_upload_callback(ch, method, properties, body):
+def jd_upload_callback(ch: Channel, method: Basic.Deliver, properties: BasicProperties, body: bytes):
     """
     Callback function to handle JD upload messages from RabbitMQ.
     负责处理请求类型：REQUEST_JD_UPLOAD

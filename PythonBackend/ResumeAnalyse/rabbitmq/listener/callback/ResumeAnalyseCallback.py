@@ -1,16 +1,20 @@
 import json
 import logging
+from sqlalchemy import text
 
 from ResumeAnalyse.Workflow import execute_graph
-from ResumeAnalyse.constants import RESUME_ANALYSIS_FINISHED_STATUS, RESUME_ANALYSIS_FAILED_STATUS, \
+from ResumeAnalyse.constants import RESUME_ANALYSIS_FINISHED_STATUS, RESUME_ANALYSIS_FAILED_STATUS, RESUME_ANALYSIS_WAITING_STATUS, \
     get_resume_analysis_redis_key, RESUME_ANALYSIS_REDIS_TTL
 from ResumeAnalyse.entity.resume_analysis_dto import ResumeAnalysisDTO
 from ResumeAnalyse.rabbitmq.constants import *
 from ResumeAnalyse.rabbitmq.utils import generate_jd_summary_text
 from ResumeAnalyse.utils import redis_client, get_sync_pooled_checkpointer, mysql_engine
+from pika.channel import Channel
+from pika.spec import Basic
+from pika.spec import BasicProperties
 
 
-def resume_analyse_callback(ch, method, properties, body):
+def resume_analyse_callback(ch: Channel, method: Basic.Deliver, properties: BasicProperties, body: bytes):
     """
     简历分析和建议的回调函数。
     负责处理请求类型：REQUEST_RESUME_JD_DIFFER、REQUEST_RESUME_ADVISE
@@ -34,6 +38,23 @@ def resume_analyse_callback(ch, method, properties, body):
         logging.debug("消息内容：" + body_str)
         # 将body_str转换为ResumeAnalysisDTO对象
         resume_analysis_request = ResumeAnalysisDTO.model_validate_json(body_str)
+
+        # 检查数据库中该条分析记录的状态，避免因为重复消息而导致重复处理
+        with mysql_engine.connect() as connection:
+            result = connection.execute(
+                text("SELECT status FROM tb_resume_analysis WHERE id = :id"),
+                {"id": resume_analysis_request.id}
+            )
+            row = result.fetchone()
+            # 如果数据库中没有该条分析记录，则该消息无效，直接放弃处理该消息
+            if row is None:
+                logging.error(f"ResumeAnalysis with ID {resume_analysis_request.id} not found in database. Failed to process this resume analyse request.")
+                return
+            status_in_db = row.status
+            # 如果数据库中的状态不是等待处理，则该消息是重复的，消息已经消费完成，直接放弃处理该消息
+            if status_in_db != RESUME_ANALYSIS_WAITING_STATUS:
+                logging.warning(f"ResumeAnalysis with ID {resume_analysis_request.id} has been processed. No need to process again.")
+                return
 
         # 构造initial_state
         initial_state = {
@@ -101,7 +122,10 @@ def resume_analyse_callback(ch, method, properties, body):
         ch.basic_publish(
             exchange=ANALYSE_EXCHANGE_NAME,
             routing_key=ANALYSE_RESULT_ROUTING_KEY,
-            body=result_body_str
+            body=result_body_str,
+            properties=BasicProperties(
+                delivery_mode=2,  # 在pika中需要手动设置delivery_mode=2以启动消息持久化，这和spring-amqp不同
+            ),
         )
         logging.info(f"Successfully processed and sent result message to queue: {ANALYSE_RESULT_QUEUE_NAME}.")
 
@@ -109,17 +133,17 @@ def resume_analyse_callback(ch, method, properties, body):
         logging.info(f"Saving summary texts to MySQL tb_analysis_summary for ID: {resume_analysis_result.id}.")
         with mysql_engine.connect() as connection:
             result = connection.execute(
-                f"""INSERT INTO tb_analysis_summary 
+                text("""INSERT INTO tb_analysis_summary 
                 (analysis_id, user_id, resume_id, jd_id, resume_summary_text, jd_summary_text)
-                 VALUES (%s, %s, %s, %s, %s, %s)""",
-                (
-                 resume_analysis_result.id,
-                 resume_analysis_result.userId,
-                 resume_analysis_result.resumeId,
-                 resume_analysis_result.jdID,
-                 final_state.get("resume_summary_text", ""),
-                 final_state.get("jd_summary_text", "")
-                )
+                 VALUES (:analysis_id, :user_id, :resume_id, :jd_id, :resume_summary_text, :jd_summary_text)"""),
+                {
+                    "analysis_id": resume_analysis_result.id,
+                    "user_id": resume_analysis_result.userId,
+                    "resume_id": resume_analysis_result.resumeId,
+                    "jd_id": resume_analysis_result.jdID,
+                    "resume_summary_text": final_state.get("resume_summary_text", ""),
+                    "jd_summary_text": final_state.get("jd_summary_text", "")
+                }
             )
             # 注意：对于INSERT、UPDATE、DELETE等操作，需要手动提交事务才能实现修改
             connection.commit()

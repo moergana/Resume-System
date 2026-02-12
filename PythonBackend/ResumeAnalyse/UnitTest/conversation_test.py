@@ -44,9 +44,11 @@ async def chat_with_agent(message: str, history: list, request: gradio.Request):
         # logging.info(f"求职建议: {thread_job_hunting_advice.get()}")
 
         agent, config = await init_conversation_agent(
+            thread_id="conversation_test",
             resume_summary_text=thread_resume_summary_text.get(),
             jd_summary_text=thread_jd_summary_text.get(),
             match_score=thread_match_score.get(),
+            differences="",
             improvement_suggestions=thread_resume_advice.get(),
             job_hunting_advice=thread_job_hunting_advice.get(),
         )
