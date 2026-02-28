@@ -42,6 +42,64 @@ spring:
         acknowledge-mode: manual    # 手动确认
         concurrency: 3
         max-concurrency: 10
+  # Kafka配置
+#  kafka:
+#    # Kafka服务器地址
+#    bootstrap-servers: localhost:9092
+#    # Kafka生产者配置
+#    producer:
+#      # 生产者的key的序列化类
+#      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+#      # 生产者的value的序列化类
+#      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+#      # 确认机制：0(不等待), 1(Leader接收), all(所有从节点接收)
+#      acks: all
+#      # 事务ID前缀。必须设置它才能开启Kafka的事务功能
+#      transaction-id-prefix: resumesys-tx-
+#      # 批量发送消息的大小，达到该大小或linger.ms时间后，消息将被批量发送
+#      batch-size: 16384
+#      properties:
+#        # 消息发送延迟，单位毫秒。在该时间内积攒更多消息进行批量发送
+#        # tips: 直接写linger.ms的话IDE会警告，因为YAML中点号被认为是层级分隔符。使用中括号加引号包裹可以避免警告
+#        "[linger.ms]": 100
+#        # 开启幂等性。开启幂等性后，Kafka会保证消息的幂等性，即同一条消息不会被重复发送
+#        # 需要注意：enable.idempotence=true需要保证acks=all，并且retries大于0。
+#        # Kafka 3.0+版本下，默认enable.idempotence=true，acks=all，retries=2147483647
+#        "[enable.idempotence]": true
+#      # 生产者缓冲区内存大小，单位字节
+#      buffer-memory: 33554432
+#      # 压缩类型。用于在批量发送消息时压缩消息内容，以减少网络传输和磁盘I/O
+#      # 可选的压缩类型有：none, gzip, snappy, lz4, zstd
+#      compression-type: lz4
+#    # Kafka消费者配置
+#    consumer:
+#      # 消费者所属的消费组ID。
+#      # 这个group-id是项目中默认采用的group-id。如果创建listener的时候不指定group-id，就会使用它。
+#      group-id: resumesys-group
+#      # 是否自动提交偏移量（自动确认）
+#      enable-auto-commit: false
+#      # 自动提交偏移量的时间间隔，单位毫秒
+#      auto-commit-interval: 1000
+#      # 消费者的key的反序列化类
+#      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#      # 消费者的value的反序列化类
+#      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+#      # 当消费者组首次消费或偏移量无效时，重置偏移量的策略。latest表示从最新消息开始消费
+#      auto-offset-reset: latest
+#      # 事务隔离级别。read-committed表示只读取已提交的消息，避免脏读
+#      isolation-level: read-committed
+#      # 每次拉取消息的最大记录数
+#      max-poll-records: 1000
+#      # 拉取消息的最大等待时间，单位毫秒
+#      fetch-max-wait: 500
+#    # Kafka监听器配置
+#    listener:
+#      # 并发度，即同时处理消息的线程数
+#      concurrency: 3
+#      # 消息确认模式。manual表示手动确认
+#      ack-mode: manual
+#      # 拉取消息的超时时间，单位毫秒
+#      poll-timeout: 3000
 mybatis-plus:
   type-aliases-package: org.kira.resumesystem # 别名扫描包，在配置mybatis时可以简化类名
 logging:

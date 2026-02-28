@@ -11,6 +11,7 @@ import org.kira.resumesystem.service.IResumeAnalysisService;
 import org.springframework.amqp.core.ExchangeTypes;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.*;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
@@ -18,12 +19,14 @@ import java.nio.charset.StandardCharsets;
 import static org.kira.resumesystem.config.mq.RabbitMqConfig.*;
 import static org.kira.resumesystem.utils.Constants.RESUME_ANALYSIS_FAILED_STATUS;
 import static org.kira.resumesystem.utils.Constants.RESUME_ANALYSIS_FINISHED_STATUS;
+import static org.kira.resumesystem.utils.RedisConstants.RESUME_ANALYSIS_KEY;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class AnalyseResultListener {
     private final IResumeAnalysisService resumeAnalysisService;
+    private final StringRedisTemplate stringRedisTemplate;
 
     /**
      * 监听简历分析结果的消息队列
@@ -75,6 +78,13 @@ public class AnalyseResultListener {
             // 保存分析结果到数据库
             resumeAnalysisService.updateById(analysisResult);
             log.info("Resume analysis results updated successfully for User ID: {}, Resume ID: {}, JD ID: {}.", userId, resumeId, jdId);
+
+            // 检查Redis中是否有对应的缓存，如果有则删除缓存（强制更新缓存）
+            String redisKey = RESUME_ANALYSIS_KEY + analysisResult.getId();
+            Boolean deleted = stringRedisTemplate.delete(redisKey);
+            if (deleted != null && deleted) {
+                log.info("Deleted Redis cache for key: {} after resume analysis result updated to database.", redisKey);
+            }
 
             // 手动确认消息已被成功处理
             long deliveryTag = message.getMessageProperties().getDeliveryTag();

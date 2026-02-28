@@ -532,9 +532,11 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
     public Result generateResumeJdDiffer(Long resumeId, Long jdId) {
         // 该方法需要传递一个简历分析的消息给RabbitMQ，然后由python端进行分析处理
         // 发送的消息体的内容为ResumeAnalysis对象，由Jackson2JsonMessageConverter自动序列化为JSON字符串
+        log.info("Generating resume-jd difference analysis request for Resume ID: {}, JD ID: {}.", resumeId, jdId);
 
         // 1. 根据传入的resumeId和jdId查询对应的简历和JD的内容
         // 获取resumeId对应的Resume对象
+        log.info("Trying to get resume with Resume ID: {}...", resumeId);
         Result resumeResult = resumeService.getResumeById(resumeId);
         if (resumeResult.getData() == null) {
             log.error("Resume with ID {} not found.", resumeId);
@@ -542,6 +544,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
         }
         Resume resume = (Resume) resumeResult.getData();
         // 获取jdId对应的JD对象
+        log.info("Trying to get JD with JD ID: {}...", jdId);
         Result jdResult = jdService.getJDById(jdId);
         if (jdResult.getData() == null) {
             log.error("JD with ID {} not found.", jdId);
@@ -549,9 +552,10 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
         }
         JD jd = (JD) jdResult.getData();
         // 2. 构造ResumeAnalysisDTO对象
+        log.info("Constructing ResumeAnalysisDTO object for the analysis request...");
         ResumeAnalysisDTO resumeAnalysisDTO = new ResumeAnalysisDTO();
-        BeanUtil.copyProperties(resume, resumeAnalysisDTO);
-        BeanUtil.copyProperties(jd, resumeAnalysisDTO);
+        BeanUtil.copyProperties(resume, resumeAnalysisDTO, "id");
+        BeanUtil.copyProperties(jd, resumeAnalysisDTO, "id");
         // 手动设置部分字段
         resumeAnalysisDTO.setUserId(UserThreadLocal.get());
         resumeAnalysisDTO.setResumeId(resumeId);    // 由于查询得到的resume对象中只有ID没有resumeId字段，需手动设置
@@ -566,6 +570,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
         resumeAnalysisDTO.setCreateTime(LocalDateTime.now());
         // 生成好resumeAnalysisDTO这个消息体后，调用处理函数进行处理（包括写入数据库，发送消息给MQ）
         HandleAnalyseRequest(resumeAnalysisDTO, ANALYSE_EXCHANGE_NAME, ANALYSE_REQUEST_ROUTING_KEY);
+        log.info("Successfully sent resume-jd difference analysis request for Resume ID: {}, JD ID: {}.", resumeId, jdId);
         return Result.success("User " + UserThreadLocal.get() +" sent resume-jd difference analysis request successfully.", resumeAnalysisDTO);
     }
 
@@ -577,7 +582,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
             log.info("Trying saving initial resume analysis record to database for User ID: {}, Resume ID: {}, JD ID: {}, Request Type: {}...",
                     resumeAnalysisDTO.getUserId(), resumeAnalysisDTO.getResumeId(), resumeAnalysisDTO.getJdID(), resumeAnalysisDTO.getRequestType());
             ResumeAnalysis resumeAnalysis = new ResumeAnalysis();
-            BeanUtil.copyProperties(resumeAnalysisDTO, resumeAnalysis, "retrievedResumes", "retrievedJds");
+            BeanUtil.copyProperties(resumeAnalysisDTO, resumeAnalysis, "id", "retrievedResumes", "retrievedJds");
             resumeAnalysis.setRetrievedResumes(JSONUtil.toJsonStr(resumeAnalysisDTO.getRetrievedResumes()));
             resumeAnalysis.setRetrievedJds(JSONUtil.toJsonStr(resumeAnalysisDTO.getRetrievedJds()));
             save(resumeAnalysis);   // 将resumeAnalysis对象保存到数据库中
@@ -623,9 +628,11 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
     public Result generateResumeAdvice(Long resumeId, Long jdId) {
         // 该方法需要传递一个简历分析的消息给RabbitMQ，然后由python端进行分析处理
         // 发送的消息体的内容为ResumeAnalysis对象，由Jackson2JsonMessageConverter自动序列化为JSON字符串
+        log.info("Generating resume analysis advice request for Resume ID: {}, JD ID: {}", resumeId, jdId);
 
         // 1. 根据传入的resumeId和jdId查询对应的简历和JD的内容
         // 获取resumeId对应的Resume对象
+        log.info("Trying to get resume with Resume ID: {}...", resumeId);
         Result resumeResult = resumeService.getResumeById(resumeId);
         if (resumeResult.getData() == null) {
             log.error("Resume with ID {} not found.", resumeId);
@@ -633,6 +640,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
         }
         Resume resume = (Resume) resumeResult.getData();
         // 获取jdId对应的JD对象
+        log.info("Trying to get JD with JD ID: {}...", jdId);
         Result jdResult = jdService.getJDById(jdId);
         if (jdResult.getData() == null) {
             log.error("JD with ID {} not found.", jdId);
@@ -640,9 +648,10 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
         }
         JD jd = (JD) jdResult.getData();
         // 2. 构造ResumeAnalysisDTO对象
+        log.info("Constructing ResumeAnalysisDTO object for Resume ID: {}, JD ID: {}...", resumeId, jdId);
         ResumeAnalysisDTO resumeAnalysisDTO = new ResumeAnalysisDTO();
-        BeanUtil.copyProperties(resume, resumeAnalysisDTO);
-        BeanUtil.copyProperties(jd, resumeAnalysisDTO);
+        BeanUtil.copyProperties(resume, resumeAnalysisDTO, "id");
+        BeanUtil.copyProperties(jd, resumeAnalysisDTO, "id");
         // 手动设置部分字段
         resumeAnalysisDTO.setUserId(UserThreadLocal.get());
         resumeAnalysisDTO.setResumeId(resumeId);    // 由于查询得到的resume对象中只有ID没有resumeId字段，需手动设置
@@ -657,6 +666,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
         resumeAnalysisDTO.setCreateTime(LocalDateTime.now());
         // 生成好resumeAnalysisDTO这个消息体后，调用处理函数进行处理（包括写入数据库，发送消息给MQ）
         HandleAnalyseRequest(resumeAnalysisDTO, ANALYSE_EXCHANGE_NAME , ANALYSE_REQUEST_ROUTING_KEY);
+        log.info("Successfully sent resume analysis advice request for Resume ID: {}, JD ID: {}.", resumeId, jdId);
         return Result.success("User " + UserThreadLocal.get() + " sent resume advice request successfully.", resumeAnalysisDTO);
     }
 
@@ -669,7 +679,10 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
     @Transactional(rollbackFor = Exception.class)
     public Result generateJDMatch(Long resumeId) {
         // 构造JD匹配的请求消息，发送给RabbitMQ
+        log.info("Generating JD match request for Resume ID: {}.", resumeId);
+
         // 1. 首先根据传入的resumeId中查询对应的简历信息
+        log.info("Trying to get resume with Resume ID: {}...", resumeId);
         Result resumeResult = resumeService.getResumeById(resumeId);
         if (resumeResult.getData() == null) {
             log.error("Resume with ID {} not found.", resumeId);
@@ -677,8 +690,9 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
         }
         Resume resume = (Resume) resumeResult.getData();
         // 2. 构造ResumeAnalysisDTO对象
+        log.info("Constructing ResumeAnalysisDTO object for JD match request for Resume ID: {}...", resumeId);
         ResumeAnalysisDTO resumeAnalysisDTO = new ResumeAnalysisDTO();
-        BeanUtil.copyProperties(resume, resumeAnalysisDTO);
+        BeanUtil.copyProperties(resume, resumeAnalysisDTO, "id");
         // 手动设置部分字段
         resumeAnalysisDTO.setUserId(UserThreadLocal.get());
         resumeAnalysisDTO.setResumeId(resumeId);    // 由于查询得到的resume对象中只有ID没有resumeId字段，需手动设置
@@ -691,6 +705,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
         resumeAnalysisDTO.setCreateTime(LocalDateTime.now());
         // 生成好resumeAnalysisDTO这个消息体后，调用处理函数进行处理（包括写入数据库，发送消息给MQ）
         HandleAnalyseRequest(resumeAnalysisDTO, MATCH_EXCHANGE_NAME, JD_MATCH_REQUEST_ROUTING_KEY);
+        log.info("Successfully sent JD match request for Resume ID: {}.", resumeId);
         return Result.success("User " + UserThreadLocal.get() + " sent JD match request successfully.", resumeAnalysisDTO);
     }
 
@@ -698,7 +713,10 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
     @Transactional(rollbackFor = Exception.class)
     public Result generateResumeMatch(Long jdId) {
         // 构造简历匹配的请求消息，发送给RabbitMQ
+        log.info("Generating resume match request for JD ID: {}.", jdId);
+
         // 1. 首先从数据库中查询JD信息
+        log.info("Trying to get JD with JD ID: {}...", jdId);
         Result jdResult = jdService.getJDById(jdId);
         if (jdResult.getData() == null) {
             log.error("JD with ID {} not found.", jdId);
@@ -706,8 +724,9 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
         }
         JD jd = (JD) jdResult.getData();
         // 2. 构造ResumeAnalysisDTO对象
+        log.info("Constructing ResumeAnalysisDTO object for resume match request for JD ID: {}...", jdId);
         ResumeAnalysisDTO resumeAnalysisDTO = new ResumeAnalysisDTO();
-        BeanUtil.copyProperties(jd, resumeAnalysisDTO);
+        BeanUtil.copyProperties(jd, resumeAnalysisDTO, "id");
         // 手动设置部分字段
         resumeAnalysisDTO.setUserId(UserThreadLocal.get());
         resumeAnalysisDTO.setJdID(jdId);    // 由于查询得到的JD对象中只有ID没有jdId字段，需手动设置
@@ -720,6 +739,7 @@ public class ResumeAnalysisServiceImpl extends ServiceImpl<ResumeAnalysisMapper,
         resumeAnalysisDTO.setCreateTime(LocalDateTime.now());
         // 生成好resumeAnalysisDTO这个消息体后，调用处理函数进行处理（包括写入数据库，发送消息给MQ）
         HandleAnalyseRequest(resumeAnalysisDTO, MATCH_EXCHANGE_NAME, RESUME_MATCH_REQUEST_ROUTING_KEY);
+        log.info("Successfully sent resume match request for JD ID: {}.", jdId);
         return Result.success("User " + UserThreadLocal.get() + " sent Resume match request successfully.", resumeAnalysisDTO);
     }
 }

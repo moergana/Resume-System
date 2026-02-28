@@ -26,7 +26,7 @@ public class ResumeAnalysisCuckooFilter {
 
 
     @Pointcut("execution(* org.kira.resumesystem.service.serviceImpl.ResumeAnalysisServiceImpl.generate*(..))")
-    public void addPointcut() {}
+    public void generatePointcut() {}
 
 
     @Pointcut("execution(* org.kira.resumesystem.service.serviceImpl.ResumeAnalysisServiceImpl.deleteResumeAnalysisById(..))")
@@ -46,19 +46,20 @@ public class ResumeAnalysisCuckooFilter {
         }
     }
 
-    @Around("addPointcut()")
+    @Around("generatePointcut()")
     @Transactional(rollbackFor = Exception.class)
     public Object aroundAdd(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
-        Object[] args = proceedingJoinPoint.getArgs();
-        ResumeAnalysisDTO resumeAnalysisDTO = (ResumeAnalysisDTO) args[0];
         Object proceedResult = proceedingJoinPoint.proceed();
         Result result = (Result) proceedResult;
-        if (result.getCode() != 200) {
-            boolean added = redisCuckooFilterTool.addnx(RESUME_ANALYSIS_CUCKOO_FILTER_KEY, String.valueOf(resumeAnalysisDTO.getId()));
+        if (result.getCode() == 200) {
+            Object data = result.getData();
+            ResumeAnalysisDTO resumeAnalysisDTO = (ResumeAnalysisDTO) data;
+            Long id = resumeAnalysisDTO.getId();
+            boolean added = redisCuckooFilterTool.addnx(RESUME_ANALYSIS_CUCKOO_FILTER_KEY, String.valueOf(id));
             if (added) {
-                log.info("Successfully added Resume Analysis ID {} to Cuckoo Filter.", resumeAnalysisDTO.getId());
+                log.info("Successfully added Resume Analysis ID {} to Cuckoo Filter.", id);
             } else {
-                log.error("Failed to add Resume Analysis ID {} to Cuckoo Filter.", resumeAnalysisDTO.getId());
+                log.error("Failed to add Resume Analysis ID {} to Cuckoo Filter.", id);
                 throw new RuntimeException("Failed to add Resume Analysis ID to Cuckoo Filter.");
             }
         }

@@ -25,7 +25,10 @@ mq_parameters = ConnectionParameters(
     credentials=PlainCredentials(
         username=rabbitmq_settings.get("Username", ""),
         password=rabbitmq_settings.get("Password", "")
-    )
+    ),
+    heartbeat=120,  # 设置心跳间隔，单位为秒。每隔这段时间，pika会发送一个心跳包来保持连接活跃，防止连接被RabbitMQ服务器关闭。
+                    # 如果设置为0，则禁用心跳机制，但是这可能导致连接在网络问题时无法及时检测到。
+    blocked_connection_timeout=180  # 设置阻塞超时时间，单位为秒。如果连接被阻塞超过这个时间，pika会强制关闭连接并抛出异常
 )
 
 aio_mq_parameters = {

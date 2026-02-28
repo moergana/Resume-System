@@ -6,10 +6,12 @@
 
     "python.testing.autoTestDiscoverOnSaveEnabled": false,  // 禁用保存时自动测试发现
     "python.testing.unittestArgs": [
-        "-v",
-        "-s",
+        "-v",   // -v 参数设置测试的详细输出模式
+        "-s",   // -s 参数设置搜索测试文件的目录，应该指定为单元测试文件所在目录
         "${workspaceFolder}/ResumeAnalyse/UnitTest",
-        "-p",
-        "*test*.py"
+        "-p",   // -p 参数设置测试文件的名称模式
+        "*test*.py",
+        "-t",   // -t 参数设置测试的根目录，这与import本地模块时的路径有关，推荐设置为工作目录
+        "${workspaceFolder}"
     ]
 }

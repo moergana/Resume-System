@@ -616,7 +616,6 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
         jd.setCreateTime(now);
         jd.setUpdateTime(now);
         jd.setFilePath(""); // 由于没有上传文件，文件路径置为空字符串
-        jdDTO.setName(getJdName(jd));
         try {
             // 将新的简历文件的相关信息写入数据库表
             boolean success = save(jd);     // 保存成功后，save方法会将生成的ID回填到jd对象中
@@ -624,6 +623,8 @@ public class JDServiceImpl extends ServiceImpl<JDMapper, JD> implements IJDServi
                 log.error("Failed to save JD info to database for user ID: {}", UserThreadLocal.get());
                 return Result.fail("JD upload failed: unable to save JD info to database.");
             }
+            BeanUtil.copyProperties(jd, jdDTO);
+            jdDTO.setName(getJdName(jd));   // 设置前端展示的JD名称
         } catch (Exception e) {
             log.error("Failed to save JD info to database: {}", e.getMessage());
             throw new DbException("Failed to save JD info to database due to an exception.", e);

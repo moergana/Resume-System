@@ -40,3 +40,11 @@ def get_resume_analysis_redis_key(analysis_id: int) -> str:
     :return: Redis Key
     """
     return f"{RESUME_ANALYSIS_REDIS_KEY_PREFIX}{analysis_id}"
+
+# 检索算法名称常量
+SIMILARITY_FUNCTION = "similarity"  # 基于向量相似度的检索方法
+MMR_FUNCTION = "mmr"  # 基于最大边际相关性的检索
+SIMILARITY_BM25_FUNCTION = "similarity_bm25"  # 基于向量相似度和BM25文本匹配的混合检索方法
+
+# 重排算法参数常量，用于混合检索中不同检索结果的融合
+RRF_K = 100  # Reciprocal Rank Fusion算法中的k值，该值越大，某一个排名对最终得分的影响会越小，得分的上限也会越小

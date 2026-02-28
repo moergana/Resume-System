@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import static org.kira.resumesystem.config.mq.RabbitMqConfig.*;
 import static org.kira.resumesystem.utils.Constants.RESUME_ANALYSIS_FAILED_STATUS;
 import static org.kira.resumesystem.utils.Constants.RESUME_ANALYSIS_FINISHED_STATUS;
+import static org.kira.resumesystem.utils.RedisConstants.RESUME_ANALYSIS_KEY;
 
 @Slf4j
 @Component
@@ -78,6 +79,13 @@ public class MatchResultListener {
             // log.info("JD match result to be saved to database: {}", resumeAnalysis);
             resumeAnalysisService.updateById(resumeAnalysis);
             log.info("JD match result updated to database successfully.");
+
+            // 检查Redis中是否有对应的缓存，如果有则删除缓存（强制更新缓存）
+            String redisKey = RESUME_ANALYSIS_KEY + resumeAnalysis.getId();
+            Boolean deleted = stringRedisTemplate.delete(redisKey);
+            if (deleted != null && deleted) {
+                log.info("Deleted Redis cache for key: {} after JD match result updated to database.", redisKey);
+            }
 
             // 手动确认消息已被成功处理
             long deliveryTag = message.getMessageProperties().getDeliveryTag();
@@ -147,6 +155,13 @@ public class MatchResultListener {
             // log.info("Resume match result to be saved to database: {}", resumeAnalysis);
             resumeAnalysisService.updateById(resumeAnalysis);
             log.info("Resume match result updated to database successfully.");
+
+            // 检查Redis中是否有对应的缓存，如果有则删除缓存（强制更新缓存）
+            String redisKey = RESUME_ANALYSIS_KEY + resumeAnalysis.getId();
+            Boolean deleted = stringRedisTemplate.delete(redisKey);
+            if (deleted != null && deleted) {
+                log.info("Deleted Redis cache for key: {} after resume match result updated to database.", redisKey);
+            }
 
             // 手动确认消息已被成功处理
             long deliveryTag = message.getMessageProperties().getDeliveryTag();

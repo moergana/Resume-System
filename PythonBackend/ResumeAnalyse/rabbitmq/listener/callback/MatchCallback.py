@@ -41,7 +41,7 @@ def jd_match_callback(ch: Channel, method: Basic.Deliver, properties: BasicPrope
         # 检查数据库中该条分析记录的状态，避免因为重复消息而导致重复处理
         with mysql_engine.connect() as connection:
             result = connection.execute(
-                text("SELECT status FROM resume_analysis WHERE id = :id"),
+                text("SELECT status FROM tb_resume_analysis WHERE id = :id"),
                 {"id": jd_match_request.id}
             )
             row = result.fetchone()
@@ -160,7 +160,7 @@ def resume_match_callback(ch: Channel, method: Basic.Deliver, properties: BasicP
         # 检查数据库中该条分析记录的状态，避免因为重复消息而导致重复处理
         with mysql_engine.connect() as connection:
             result = connection.execute(
-                text("SELECT status FROM resume_analysis WHERE id = :id"),
+                text("SELECT status FROM tb_resume_analysis WHERE id = :id"),
                 {"id": resume_match_request.id}
             )
             row = result.fetchone()

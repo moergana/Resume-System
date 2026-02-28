@@ -1,6 +1,8 @@
+from curses import meta
 import os
 from typing import List
 
+from langchain_milvus import Milvus
 import numpy as np
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
@@ -8,8 +10,11 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import logging
 
+from unstructured import documents
+
 from ResumeAnalyse.Summarizer import ResumeSummary, JDSummary
-from ResumeAnalyse.utils import embed_model_name, resume_vectordb, embed_model, JD_vectordb
+from ResumeAnalyse.constants import MMR_FUNCTION, RRF_K, SIMILARITY_FUNCTION, SIMILARITY_BM25_FUNCTION
+from ResumeAnalyse.utils import resume_vectordb, embed_model, JD_vectordb
 
 
 def handle_dict(data: dict) -> str:
@@ -117,20 +122,24 @@ def add_resumes_to_vector_db(resume_texts: List[str], ids: list[str]) -> None:
         logging.info(f"Added resume ID {ids[index]} with {len(split_str)} chunks to the vector database.")\
     """
     # 由于简历内容已经经过LLM精炼，不进行分块，直接添加到向量数据库
+    # 为了提高添加效率，批量添加简历文本内容到向量数据库中，同时为每个简历文本指定对应的ID和metadata
+    metadatas = []
     for index, resume_text in enumerate(resume_texts):
         metadata = {
             "resume_id": ids[index],
         }
-        resume_vectordb.add_texts(texts=[resume_text],
-                                  metadatas=[metadata],
-                                  ids=[ids[index]])
-        logging.info(f"Added resume (ID: \"{ids[index]}\") to the vector database.")
+        metadatas.append(metadata)
+        
+    resume_vectordb.add_texts(texts=resume_texts,
+                              metadatas=metadatas,
+                              ids=ids)
+    logging.info(f"Added resumes (IDs: {ids}) to the vector database.")
 
     logging.info(f"All {len(resume_texts)} resumes have been added to the vector database successfully.")
 
 
 def retrieve_resumes(JD: str,
-                     search_type: str = "similarity",
+                     search_type: str = None,
                      k: int = 4,
                      fetch_k: int = 20,
                      lambda_mult: float = 0.5) -> List[dict]:
@@ -138,7 +147,8 @@ def retrieve_resumes(JD: str,
 
     Args:
         JD (str): 查询用的JD。
-        search_type (str, optional): 检索方法，支持"similarity"和"mmr". Defaults to "similarity".
+        search_type (str, optional): 检索方法，支持"similarity"、"mmr"和"similarity_bm25". 
+                                    如果是Milvus数据库，则默认为"similarity_bm25"，为similarity和BM25的混合检索. 否则默认为"similarity".
         k (int, optional): 检索的简历数量. Defaults to 4.
         fetch_k (int, optional): MMR检索时的预检索数量. Defaults to 20.
         lambda_mult (float, optional): MMR检索时的多样性调节参数. Defaults to 0.5.
@@ -152,9 +162,20 @@ def retrieve_resumes(JD: str,
             "rank": int  # 排名
         }
     """
-    if search_type == "similarity":
+    # 如果search_type参数没有指定，根据向量数据库的类型设置默认的检索方法
+    if isinstance(resume_vectordb, Milvus) and search_type == None:
+        search_type = SIMILARITY_BM25_FUNCTION
+    else:
+        search_type = SIMILARITY_FUNCTION
+    
+    # 检索相关的简历，同时返回相似度
+    # 基于Embedding向量的内积的相似度检索，同时返回相似度得分
+    if search_type == SIMILARITY_FUNCTION:
         logging.info(f"Retrieving top {k} resumes for the JD using similarity search.")
-        retrieve_results = resume_vectordb.similarity_search_with_relevance_scores(query=JD, k=k)
+        retrieve_results = resume_vectordb.similarity_search_with_score(
+            query=JD, 
+            k=k
+        )
         # 处理检索得到的List[Tuple[Document, float]]对象，提取文本内容和相似度
         results = []
         for i, (doc, score) in enumerate(retrieve_results):
@@ -165,7 +186,9 @@ def retrieve_resumes(JD: str,
                 "content": content,
                 "similarity_score": score
             })
-    elif search_type == "mmr":
+            
+    # 基于MMR（最大边际相关性）的检索，能够在保证相关性的同时增加结果的多样性，适合需要多样化结果的场景
+    elif search_type == MMR_FUNCTION:
         logging.info(f"Retrieving top {k} resumes for the JD using MMR search.")
         retrieve_results = resume_vectordb.max_marginal_relevance_search(
             query=JD,
@@ -185,6 +208,30 @@ def retrieve_resumes(JD: str,
                 "resume_id": metadata.get("resume_id", f"unknown_id_{i}"),
                 "content": content,
                 "similarity_score": sim
+            })
+            
+    # 基于相似度和BM25的混合检索，能够结合两者的优势，在保证相关性的同时兼顾文本匹配的精确性，适合需要兼顾语义理解和关键词匹配的场景
+    # 该混合检索策略为默认使用的检索策略，能够在大多数场景下提供较好的检索效果
+    elif search_type == SIMILARITY_BM25_FUNCTION:
+        # 该混合检索算法是Milvus特有的实现，在其他向量数据库中（比如Chroma）可能没有同样的实现，使用时需要确保向量数据库支持该算法
+        if not isinstance(resume_vectordb, Milvus):
+            raise ValueError(f"similarity_bm25 search_type requires the vector database to be Milvus, but got {type(resume_vectordb)}")
+        logging.info(f"Retrieving top {k} resumes for the JD using hybrid search: similarity + BM25.")
+        retrieve_results = resume_vectordb.similarity_search_with_score(
+            query=JD, 
+            k=k,
+            ranker_type="rrf", 
+            ranker_params={"k": RRF_K}
+        )
+        # 处理检索得到的List[Tuple[Document, float]]对象，提取文本内容和相似度
+        results = []
+        for i, (doc, score) in enumerate(retrieve_results):
+            metadata = doc.metadata
+            content = doc.page_content
+            results.append({
+                "resume_id": metadata.get("resume_id", f"unknown_id_{i}"),
+                "content": content,
+                "similarity_score": score
             })
     else:
         raise ValueError(f"Unsupported search_type: {search_type}")
@@ -220,20 +267,24 @@ def add_JDs_to_vector_db(JD_texts: List[str], ids: list[str]) -> None:
     logging.info(f"All {len(JD_texts)} JDs have been added to the vector database successfully.")
     """
     # 由于JD内容已经经过LLM精炼，不进行分块，直接添加到向量数据库
+    # 为了提高添加效率，批量添加JD文本内容到向量数据库中，同时为每个JD文本指定对应的ID和metadata
+    metadatas = []
     for index, jd_text in enumerate(JD_texts):
         metadata = {
             "JD_id": ids[index],
         }
-        JD_vectordb.add_texts(texts=[jd_text],
-                              metadatas=[metadata],
-                              ids=[ids[index]])
-        logging.info(f"Added JD (ID: \"{ids[index]}\") to the vector database.")
+        metadatas.append(metadata)
+
+    JD_vectordb.add_texts(texts=JD_texts,
+                            metadatas=metadatas,
+                            ids=ids)
+    logging.info(f"Added JDs (IDs: {ids}) to the vector database.")
 
     logging.info(f"All {len(JD_texts)} JDs have been added to the vector database successfully.")
 
 
 def retrieve_JDs(resume: str,
-                 search_type: str = "similarity",
+                 search_type: str = None,
                  k: int = 4,
                  fetch_k: int = 20,
                  lambda_mult: float = 0.5) -> List[dict]:
@@ -241,7 +292,8 @@ def retrieve_JDs(resume: str,
 
     Args:
         resume (str): 查询用的简历内容。
-        search_type (str, optional): 检索方法，支持"similarity"和"mmr". Defaults to "similarity".
+        search_type (str, optional): 检索方法，支持"similarity"、"mmr"和"similarity_bm25". 
+                                    如果是Milvus数据库，则默认为"similarity_bm25"，为similarity和BM25的混合检索. 否则默认为"similarity".
         k (int, optional): 检索的简历数量. Defaults to 4.
         fetch_k (int, optional): MMR检索时的预检索数量. Defaults to 20.
         lambda_mult (float, optional): MMR检索时的多样性调节
@@ -255,12 +307,22 @@ def retrieve_JDs(resume: str,
             "rank": int  # 排名
         }
     """
+    # 如果search_type参数没有指定，根据向量数据库的类型设置默认的检索方法
+    if isinstance(JD_vectordb, Milvus) and search_type == None:
+        search_type = SIMILARITY_BM25_FUNCTION
+    else:
+        search_type = SIMILARITY_FUNCTION
+    
     # 检索相关的JD，同时返回相似度
-    if search_type == "similarity":
+    # 基于Embedding向量的内积的相似度检索，同时返回相似度得分
+    if search_type == SIMILARITY_FUNCTION:
         logging.info(f"Retrieving top {k} JDs for the resume using similarity search.")
         # similarity_search_with_relevance_scores和similarity_search_with_score是不一样的
         # 前者的分数是相似度分数，范围[0,1]，越大表示越相似；后者的分数是距离分数，范围[0,+inf)，越小表示越相似
-        retrieve_results = JD_vectordb.similarity_search_with_relevance_scores(query=resume, k=k)
+        retrieve_results = JD_vectordb.similarity_search_with_relevance_scores(
+            query=resume, 
+            k=k
+        )
         # 处理检索得到的List[Tuple[Document, float]]对象，提取文本内容和相似度
         results = []
         for i, (doc, score) in enumerate(retrieve_results):
@@ -271,7 +333,8 @@ def retrieve_JDs(resume: str,
                 "content": content,
                 "similarity_score": score
             })
-    elif search_type == "mmr":
+    # 基于MMR（最大边际相关性）的检索，能够在保证相关性的同时增加结果的多样性，适合需要多样化结果的场景
+    elif search_type == MMR_FUNCTION:
         logging.info(f"Retrieving top {k} JDs for the resume using MMR search.")
         retrieve_results = JD_vectordb.max_marginal_relevance_search(
             query=resume,
@@ -291,6 +354,29 @@ def retrieve_JDs(resume: str,
                 "JD_id": metadata.get("JD_id", f"unknown_id_{i}"),
                 "content": content,
                 "similarity_score": sim
+            })
+    # 基于相似度和BM25的混合检索，能够结合两者的优势，在保证相关性的同时兼顾文本匹配的精确性，适合需要兼顾语义理解和关键词匹配的场景
+    # 该混合检索策略为默认使用的检索策略，能够在大多数场景下提供较好的检索效果
+    elif search_type == SIMILARITY_BM25_FUNCTION:
+        # 该混合检索算法是Milvus特有的实现，在其他向量数据库中（比如Chroma）可能没有同样的实现，使用时需要确保向量数据库支持该算法
+        if not isinstance(JD_vectordb, Milvus):
+            raise ValueError(f"similarity_bm25 search_type requires the vector database to be Milvus, but got {type(JD_vectordb)}")
+        logging.info(f"Retrieving top {k} JDs for the resume using hybrid search: similarity + BM25.")
+        retrieve_results = JD_vectordb.similarity_search_with_score(
+            query=resume, 
+            k=k,
+            ranker_type="rrf", 
+            ranker_params={"k": RRF_K}
+        )
+        # 处理检索得到的List[Tuple[Document, float]]对象，提取文本内容和相似度
+        results = []
+        for i, (doc, score) in enumerate(retrieve_results):
+            metadata = doc.metadata
+            content = doc.page_content
+            results.append({
+                "JD_id": metadata.get("JD_id", f"unknown_id_{i}"),
+                "content": content,
+                "similarity_score": score
             })
     else:
         raise ValueError(f"Unsupported search_type: {search_type}")

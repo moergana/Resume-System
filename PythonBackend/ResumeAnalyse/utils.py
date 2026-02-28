@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 
+from langchain_milvus import BM25BuiltInFunction, Milvus
 import redis
 from langchain_chroma import Chroma
 from langchain_core.runnables import RunnableConfig
@@ -149,7 +150,7 @@ resume_collection_persist_directory = os.path.join(workspace_root, "ResumeAnalys
 JD_collection_name = "JD_collection"
 # JD_collection_persist_directory = workspace_root + "ResumeAnalyse/chroma_data/JDs"
 JD_collection_persist_directory = os.path.join(workspace_root, "ResumeAnalyse", "chroma_data", "JDs")
-
+""" 
 # 初始化Chroma向量数据库实例
 resume_vectordb = Chroma(
     collection_name=resume_collection_name,
@@ -162,10 +163,48 @@ JD_vectordb = Chroma(
     embedding_function=embed_model,
     persist_directory=JD_collection_persist_directory,
 )
+"""
 
-# 内存实现的短期和长期记忆
-# checkpointer = InMemorySaver()
-# store = InMemoryStore()
+# 初始化Milvus向量数据库实例
+# Milvus相比于Chroma，具有更高的性能和可扩展性，适合处理大规模的向量数据和高并发的查询请求。
+# 首先，定义Milvus向量数据库的collection在本地保存的文件路径（这和Chroma使用一个目录是不同的）
+resume_collection_db_file = os.path.join(workspace_root, "ResumeAnalyse", "milvus_data", "resumes_collection.db")
+JD_collection_db_file = os.path.join(workspace_root, "ResumeAnalyse", "milvus_data", "JDs_collection.db")
+
+# 定义Milvus向量数据库实例，指定embedding_function、collection_name和connection_args等参数
+resume_vectordb = Milvus(
+    embedding_function=embed_model,
+    collection_name=resume_collection_name,  # 指定 collection 名称
+    connection_args={
+        "uri": resume_collection_db_file,  # collection保存的文件路径
+    },
+    # 混合检索必需的配置
+    builtin_function=BM25BuiltInFunction(),
+    vector_field=["dense", "sparse"],
+    index_params=[
+        {"metric_type": "COSINE", "index_type": "FLAT"},
+        {"metric_type": "BM25", "index_type": "SPARSE_INVERTED_INDEX", "params": {"drop_ratio_build": 0.2}}
+    ],
+    auto_id=False,   # 禁用自动生成ID，需要在添加文档时手动指定ID，且ID必须是字符串类型。
+    drop_old=False,  # 如果已存在同名 collection 则删除重建。如果是生产环境想复用，设为 False
+)
+
+JD_vectordb = Milvus(
+    embedding_function=embed_model,
+    collection_name=JD_collection_name,  # 指定 collection 名称
+    connection_args={
+        "uri": JD_collection_db_file,  # collection保存的文件路径
+    },
+    # 混合检索必需的配置
+    builtin_function=BM25BuiltInFunction(),
+    vector_field=["dense", "sparse"],
+    index_params=[
+        {"metric_type": "COSINE", "index_type": "FLAT"},
+        {"metric_type": "BM25", "index_type": "SPARSE_INVERTED_INDEX", "params": {"drop_ratio_build": 0.2}}
+    ],
+    auto_id=False,   # 禁用自动生成ID，需要在添加文档时手动指定ID，且ID必须是字符串类型。
+    drop_old=False,  # 如果已存在同名 collection 则删除重建。如果是生产环境想复用，设为 False
+)
 
 
 """
@@ -178,6 +217,15 @@ pg_username = settings["PostgreSQL"]["Username"]
 pg_password = settings["PostgreSQL"]["Password"]
 # 以下是基于PostgreSQL数据库实现的短期和长期记忆，会将记忆内容记录到PostgreSQL的langgraph database中
 PG_DB_URL = f"postgresql://{pg_username}:{pg_password}@{pg_host}:{pg_port}/{pg_db}"
+
+
+# ----------------------------------------------------------------
+# 以下是关于记忆机制的配置和工具函数，以及一些与记忆相关的全局变量和函数。
+# ----------------------------------------------------------------
+
+# 内存实现的短期和长期记忆
+# checkpointer = InMemorySaver()
+# store = InMemoryStore()
 
 # from_conn_string() 方法返回的是一个上下文管理器
 # 如果使用with调用则直接能获取到checkpointer和store对象

@@ -265,7 +265,7 @@ def jd_match_node(state: GraphState, config: RunnableConfig):
     logging.info("正在根据简历摘要检索匹配的JD列表。")
     matched_jds = retrieve_JDs(
         resume=state.get("resume_summary_text", ""),
-        search_type="similarity",
+        # search_type="similarity",
         k=4,
         fetch_k=4 * 5,
         lambda_mult=0.5
@@ -291,7 +291,7 @@ def resume_match_node(state: GraphState, config: RunnableConfig):
     logging.info("正在根据JD摘要检索匹配的简历列表。")
     matched_resumes = retrieve_resumes(
         JD=state.get("jd_summary_text", ""),
-        search_type="similarity",
+        # search_type="similarity",
         k=4,
         fetch_k=4 * 5,
         lambda_mult=0.5
