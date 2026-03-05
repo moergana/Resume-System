@@ -1,0 +1,127 @@
+                                                                           Test Results                                                                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Test case                                    ┃ Metric                             ┃ Score                                       ┃ Status ┃ Overall Success Rate ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+│ test_case_0                                  │                                    │                                             │        │ 100.0%               │
+│                                              │ Retrieve Resume Evaluation [GEval] │ 0.8 (threshold=0.5, evaluation model=Custom │ PASSED │                      │
+│                                              │                                    │ OpenRouter AI Model, reason=The actual      │        │                      │
+│                                              │                                    │ output contains resumes that are highly     │        │                      │
+│                                              │                                    │ relevant to the job description. Rank 1     │        │                      │
+│                                              │                                    │ includes extensive .NET experience, C#,     │        │                      │
+│                                              │                                    │ SQL, and Agile methodologies, closely       │        │                      │
+│                                              │                                    │ matching the position requirements. Rank 2  │        │                      │
+│                                              │                                    │ also aligns well with .NET Core, Angular,   │        │                      │
+│                                              │                                    │ and Azure experience, plus leadership       │        │                      │
+│                                              │                                    │ skills. Rank 3 is less relevant as it       │        │                      │
+│                                              │                                    │ focuses on front-end technologies (React,   │        │                      │
+│                                              │                                    │ TypeScript) rather than the core .NET stack │        │                      │
+│                                              │                                    │ specified in the job description. The       │        │                      │
+│                                              │                                    │ ranking is reasonable as the most relevant  │        │                      │
+│                                              │                                    │ .NET-focused resume appears first, followed │        │                      │
+│                                              │                                    │ by another .NET resume with additional      │        │                      │
+│                                              │                                    │ leadership experience, and then a less      │        │                      │
+│                                              │                                    │ relevant front-end resume., error=None)     │        │                      │
+│                                              │                                    │                                             │        │                      │
+│ test_case_1                                  │                                    │                                             │        │ 0.0%                 │
+│                                              │ Retrieve Resume Evaluation [GEval] │ 0.2 (threshold=0.5, evaluation model=Custom │ FAILED │                      │
+│                                              │                                    │ OpenRouter AI Model, reason=The resumes     │        │                      │
+│                                              │                                    │ show partial technical alignment with       │        │                      │
+│                                              │                                    │ skills like Linux administration and C/C++  │        │                      │
+│                                              │                                    │ programming (Ranks 1 and 2), but all fail   │        │                      │
+│                                              │                                    │ to address mandatory requirements: U.S.     │        │                      │
+│                                              │                                    │ citizenship or permanent residency and DoD  │        │                      │
+│                                              │                                    │ 8570 certification (e.g., CISSP,            │        │                      │
+│                                              │                                    │ Security+). Rank 3 is poorly aligned due to │        │                      │
+│                                              │                                    │ its web development focus without Linux     │        │                      │
+│                                              │                                    │ system administration. The ranking orders   │        │                      │
+│                                              │                                    │ candidates by technical experience but      │        │                      │
+│                                              │                                    │ overlooks these critical non-technical      │        │                      │
+│                                              │                                    │ criteria, making content relevance low and  │        │                      │
+│                                              │                                    │ ranking不合理 for the specific job          │        │                      │
+│                                              │                                    │ demands., error=None)                       │        │                      │
+│                                              │                                    │                                             │        │                      │
+│ test_case_2                                  │                                    │                                             │        │ 0.0%                 │
+│                                              │ Retrieve Resume Evaluation [GEval] │ 0.4 (threshold=0.5, evaluation model=Custom │ FAILED │                      │
+│                                              │                                    │ OpenRouter AI Model, reason=The actual      │        │                      │
+│                                              │                                    │ output provides three ranked resumes, but   │        │                      │
+│                                              │                                    │ none of them strongly align with the        │        │                      │
+│                                              │                                    │ specific requirements of the job posting.   │        │                      │
+│                                              │                                    │ Rank 1 mentions Python and C++ skills,      │        │                      │
+│                                              │                                    │ which are relevant, but lacks experience in │        │                      │
+│                                              │                                    │ financial technology or structured          │        │                      │
+│                                              │                                    │ products. Rank 2 has Java experience and    │        │                      │
+│                                              │                                    │ mentions banking projects, which partially  │        │                      │
+│                                              │                                    │ aligns with the financial technology        │        │                      │
+│                                              │                                    │ requirement, but does not emphasize Python  │        │                      │
+│                                              │                                    │ or C++ as strongly. Rank 3 focuses on Linux │        │                      │
+│                                              │                                    │ kernel development and embedded systems,    │        │                      │
+│                                              │                                    │ which are not mentioned in the job          │        │                      │
+│                                              │                                    │ requirements. While some skills overlap,    │        │                      │
+│                                              │                                    │ the resumes do not strongly demonstrate the │        │                      │
+│                                              │                                    │ key requirements like Python, Java, C++,    │        │                      │
+│                                              │                                    │ and financial technology experience. The    │        │                      │
+│                                              │                                    │ ranking also does not clearly prioritize    │        │                      │
+│                                              │                                    │ the most relevant candidates., error=None)  │        │                      │
+│                                              │                                    │                                             │        │                      │
+│ test_case_3                                  │                                    │                                             │        │ 0.0%                 │
+│                                              │ Retrieve Resume Evaluation [GEval] │ 0.2 (threshold=0.5, evaluation model=Custom │ FAILED │                      │
+│                                              │                                    │ OpenRouter AI Model, reason=The top-ranked  │        │                      │
+│                                              │                                    │ resume (Rank 1) is primarily a frontend     │        │                      │
+│                                              │                                    │ developer with only peripheral backend      │        │                      │
+│                                              │                                    │ experience in Django and PostgreSQL,        │        │                      │
+│                                              │                                    │ missing key requirements like RESTful APIs, │        │                      │
+│                                              │                                    │ AWS, messaging frameworks, TDD, and CI/CD.  │        │                      │
+│                                              │                                    │ In contrast, the second-ranked resume (Rank │        │                      │
+│                                              │                                    │ 2) strongly aligns with the backend role    │        │                      │
+│                                              │                                    │ through skills in Python, Go,               │        │                      │
+│                                              │                                    │ microservices, REST APIs, CI/CD, and cloud  │        │                      │
+│                                              │                                    │ technologies, yet it is irrationally ranked │        │                      │
+│                                              │                                    │ lower. The ranking does not prioritize the  │        │                      │
+│                                              │                                    │ most relevant candidate based on the job's  │        │                      │
+│                                              │                                    │ backend focus, violating both content       │        │                      │
+│                                              │                                    │ relevance and ranking rationality.,         │        │                      │
+│                                              │                                    │ error=None)                                 │        │                      │
+│                                              │                                    │                                             │        │                      │
+│ test_case_4                                  │                                    │                                             │        │ 100.0%               │
+│                                              │ Retrieve Resume Evaluation [GEval] │ 0.6 (threshold=0.5, evaluation model=Custom │ PASSED │                      │
+│                                              │                                    │ OpenRouter AI Model, reason=The actual      │        │                      │
+│                                              │                                    │ output contains resume content that         │        │                      │
+│                                              │                                    │ partially aligns with the job requirements, │        │                      │
+│                                              │                                    │ but there are notable gaps. Rank 1's resume │        │                      │
+│                                              │                                    │ includes Java experience and relevant       │        │                      │
+│                                              │                                    │ skills, which align with the job's primary  │        │                      │
+│                                              │                                    │ requirement. However, it lacks specific     │        │                      │
+│                                              │                                    │ experience with C#, Elastic Search, Oracle, │        │                      │
+│                                              │                                    │ and other secondary skills mentioned in the │        │                      │
+│                                              │                                    │ job description. Rank 2's resume focuses on │        │                      │
+│                                              │                                    │ Java backend development, which is          │        │                      │
+│                                              │                                    │ relevant, but the experience is more recent │        │                      │
+│                                              │                                    │ and less comprehensive than the job's       │        │                      │
+│                                              │                                    │ requirement of 2+ years. Rank 3's resume is │        │                      │
+│                                              │                                    │ entirely focused on frontend development,   │        │                      │
+│                                              │                                    │ which does not align with the job's core    │        │                      │
+│                                              │                                    │ requirement for a Java Software Developer.  │        │                      │
+│                                              │                                    │ The ranking appears somewhat reasonable,    │        │                      │
+│                                              │                                    │ with Rank 1 being the most relevant, but    │        │                      │
+│                                              │                                    │ the overall alignment with the job          │        │                      │
+│                                              │                                    │ description is moderate., error=None)       │        │                      │
+│ Note: Use Confident AI with DeepEval to      │                                    │                                             │        │                      │
+│ analyze failed test cases for more details   │                                    │                                             │        │                      │
+└──────────────────────────────────────────────┴────────────────────────────────────┴─────────────────────────────────────────────┴────────┴──────────────────────┘
+
+⚠ WARNING: No hyperparameters logged.
+» Log hyperparameters to attribute prompts and models to your test runs.
+
+================================================================================
+Results saved in ./deepeval_data as 20260305_144245
+
+
+✓ Evaluation completed 🎉! (time taken: 328.69s | token cost: None)
+» Test Results (5 total tests):
+   » Pass Rate: 40.0% | Passed: 2 | Failed: 3
+
+ ================================================================================ 
+
+» Want to share evals with your team, or a place for your test cases to live? ❤️ 🏡
+  » Run 'deepeval view' to analyze and save testing results on Confident AI.
+

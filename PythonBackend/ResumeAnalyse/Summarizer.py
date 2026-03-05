@@ -9,7 +9,6 @@ from typing import List, Dict
 from ResumeAnalyse import utils
 from ResumeAnalyse.entity.summary import ResumeSummary, JDSummary
 
-# from ResumeAnalyse.PDFExtractor import markdown_res
 
 Model_Name = "openrouter/free"
 Base_URL = "https://openrouter.ai/api/v1"
@@ -33,7 +32,7 @@ resume_summary_llm_template = PromptTemplate.from_template(template="""你是一
 8. 相关证书或资格
 9. 综合素质总结
 请确保提取的信息准确，并将提取到的信息做必要的总结，同时确保总结精炼且保留关键信息。
-如果某些信息在简历中没有明确提及而无法确定，请相应地标注为“未知”或“未提供”等提示信息。
+如果某些信息在简历中没有明确提及而无法确定，请相应地标注为“未知”或“未提供”等提示信息，非文本类型标注为默认值。
 简历内容如下：
 {resume_content}""")
 
@@ -72,7 +71,7 @@ jd_summary_llm_template = PromptTemplate.from_template(
 6. 职位福利列表
 7. 对职位描述的综合总结
 请确保提取的信息准确，并将提取到的信息做必要的总结，同时确保总结精炼且保留关键信息。
-如果某些信息在职位描述中没有明确提及而无法确定，请相应地标注为“未知”或“未提供”等提示信息。
+如果某些信息在职位描述中没有明确提及而无法确定，请相应地标注为“未知”或“未提供”等提示信息，非文本类型标注为默认值。
 职位描述内容如下：
 {jd_content}""")
 

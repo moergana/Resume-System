@@ -140,7 +140,7 @@ def vectorize_node(state: GraphState, config: RunnableConfig):
         logging.info("请求类型为：jd_upload。正在将JD内容添加到向量数据库中...")
         jd_summary_text = state.get("jd_summary_text", "")
         jd_id = state.get("jd_id", "")
-        jd_id = str(jd_id)  # 将resume_id强制转换为字符串类型
+        jd_id = str(jd_id)  # 将jd_id强制转换为字符串类型
         add_JDs_to_vector_db([jd_summary_text], [jd_id])
         logging.info("JD内容已成功添加到向量数据库中。")
         state["log_msg"].append("JD内容已成功添加到向量数据库中。\n")

@@ -1,0 +1,444 @@
+                                                                                    Test Results                                                                                    
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Test case                                              ┃ Metric                        ┃ Score                                                   ┃ Status ┃ Overall Success Rate ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+│ test_case_0                                            │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The actual output correctly assigns a  │        │                      │
+│                                                        │                               │ low match score of 20, which reasonably reflects the    │        │                      │
+│                                                        │                               │ fundamental mismatch between the candidate's technology │        │                      │
+│                                                        │                               │ stack (Java/Python/JavaScript/Spring Boot/Node.js) and  │        │                      │
+│                                                        │                               │ the job's mandatory requirements                        │        │                      │
+│                                                        │                               │ (.NET/C#/MSSQL/WCF/Visual Studio/TFS). The difference   │        │                      │
+│                                                        │                               │ point analysis is highly relevant and specific,         │        │                      │
+│                                                        │                               │ accurately pinpointing the absence of .NET/C#           │        │                      │
+│                                                        │                               │ expertise, lack of stated MSSQL 2012+ and WCF           │        │                      │
+│                                                        │                               │ experience, and the mismatch between the candidate's    │        │                      │
+│                                                        │                               │ project domains (telecom/healthcare) and the insurance  │        │                      │
+│                                                        │                               │ company context. It also correctly notes the missing    │        │                      │
+│                                                        │                               │ explicit mention of Agile/Scrum methodologies and the   │        │                      │
+│                                                        │                               │ unaddressed location requirement. The analysis is       │        │                      │
+│                                                        │                               │ clear, directly tied to details in both the resume and  │        │                      │
+│                                                        │                               │ job description, and avoids vague statements. No        │        │                      │
+│                                                        │                               │ contradictions or illogical assertions are present; the │        │                      │
+│                                                        │                               │ assessment is consistently grounded in the input.,      │        │                      │
+│                                                        │                               │ error=None)                                             │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_1                                            │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 1.0 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The actual output demonstrates strong  │        │                      │
+│                                                        │                               │ alignment with the evaluation steps. The match score of │        │                      │
+│                                                        │                               │ 30 is reasonable given the substantial mismatches       │        │                      │
+│                                                        │                               │ between the resume's Linux kernel and C/C++ focus and   │        │                      │
+│                                                        │                               │ the job's .NET and Microsoft technology requirements.   │        │                      │
+│                                                        │                               │ The difference analysis is highly relevant, addressing  │        │                      │
+│                                                        │                               │ specific elements from both the resume and job          │        │                      │
+│                                                        │                               │ description, such as missing .NET skills, Agile         │        │                      │
+│                                                        │                               │ experience, and degree documentation. It is targeted to │        │                      │
+│                                                        │                               │ the input's details rather than generic, accurately     │        │                      │
+│                                                        │                               │ pinpointing gaps like no evidence of C#, MVC, or TFS    │        │                      │
+│                                                        │                               │ usage. The analysis is clear, organized in a numbered   │        │                      │
+│                                                        │                               │ list, and logically consistent without vague            │        │                      │
+│                                                        │                               │ expressions, adhering closely to the input content as   │        │                      │
+│                                                        │                               │ per step 6., error=None)                                │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_2                                            │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The difference analysis is highly      │        │                      │
+│                                                        │                               │ relevant and specific, accurately contrasting the       │        │                      │
+│                                                        │                               │ candidate's experience with PHP, React, Node.js against │        │                      │
+│                                                        │                               │ the job's requirements for .NET, C#, ASP.NET, MSSQL,    │        │                      │
+│                                                        │                               │ and noting missing Agile/Scrum, Visual Studio, TFS, and │        │                      │
+│                                                        │                               │ WCF experience. It is clear, reasonable, and targeted   │        │                      │
+│                                                        │                               │ to the input, effectively communicating significant     │        │                      │
+│                                                        │                               │ gaps while acknowledging transferable skills. The match │        │                      │
+│                                                        │                               │ score is consistent with this analysis, though the      │        │                      │
+│                                                        │                               │ complete lack of direct Microsoft technology experience │        │                      │
+│                                                        │                               │ might imply a lower score., error=None)                 │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_3                                            │                               │                                                         │        │ 0.0%                 │
+│                                                        │ Difference Evaluation [GEval] │ 0.3 (threshold=0.5, evaluation model=Custom OpenRouter  │ FAILED │                      │
+│                                                        │                               │ AI Model,                                               │        │                      │
+│                                                        │                               │ reason=匹配度分数58显著高估了简历与职位描述的匹配程度 … │        │                      │
+│                                                        │                               │ .NET技术栈（C#, ASP.NET, WCF等）而简历仅涉及Java/Sprin… │        │                      │
+│                                                        │                               │ Boot等非微软技术，无任何重叠；差异点分析则高度相关、针… │        │                      │
+│                                                        │                               │ error=None)                                             │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_4                                            │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.8 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The output provides a reasonable match │        │                      │
+│                                                        │                               │ score of 45, which aligns with the significant          │        │                      │
+│                                                        │                               │ technical gaps identified between the resume and job    │        │                      │
+│                                                        │                               │ description, particularly the lack of .NET/C# expertise │        │                      │
+│                                                        │                               │ and ASP.NET/WCF experience. The analysis is specific    │        │                      │
+│                                                        │                               │ and directly tied to the input, highlighting the        │        │                      │
+│                                                        │                               │ mismatch in technology stacks (React/JavaScript vs      │        │                      │
+│                                                        │                               │ .NET) and the less relevant education field. However,   │        │                      │
+│                                                        │                               │ the analysis could be more detailed in addressing other │        │                      │
+│                                                        │                               │ aspects like the candidate's strong Agile experience    │        │                      │
+│                                                        │                               │ and customer support background, which might partially  │        │                      │
+│                                                        │                               │ offset some gaps. The explanation is clear and concise, │        │                      │
+│                                                        │                               │ avoiding vague or contradictory statements.,            │        │                      │
+│                                                        │                               │ error=None)                                             │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_5                                            │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 1.0 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The match score is reasonable as it    │        │                      │
+│                                                        │                               │ reflects the substantial technical stack mismatch       │        │                      │
+│                                                        │                               │ between the candidate's Java/React background and the   │        │                      │
+│                                                        │                               │ job's .NET/C# requirements. The difference analysis is  │        │                      │
+│                                                        │                               │ directly relevant, citing specific technologies from    │        │                      │
+│                                                        │                               │ both inputs; it is targeted to this case, accurately    │        │                      │
+│                                                        │                               │ noting gaps such as lack of .NET, Angular, and WCF      │        │                      │
+│                                                        │                               │ experience; it is reasonable in assessing transferable  │        │                      │
+│                                                        │                               │ skills but significant unmet needs; and it is expressed │        │                      │
+│                                                        │                               │ clearly without vagueness, satisfying all evaluation    │        │                      │
+│                                                        │                               │ criteria., error=None)                                  │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_6                                            │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.5 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The gap analysis accurately highlights │        │                      │
+│                                                        │                               │ specific mismatches such as absence of DoD 8570         │        │                      │
+│                                                        │                               │ certification, lack of Secret clearance, and unclear    │        │                      │
+│                                                        │                               │ U.S. citizenship, which are mandatory requirements for  │        │                      │
+│                                                        │                               │ the position. The analysis is relevant, targeted,       │        │                      │
+│                                                        │                               │ reasonable, and clearly expressed. However, the match   │        │                      │
+│                                                        │                               │ score of 70 is unreasonably high given that these gaps  │        │                      │
+│                                                        │                               │ involve non-negotiable eligibility criteria, failing to │        │                      │
+│                                                        │                               │ align the score with the input's critical constraints., │        │                      │
+│                                                        │                               │ error=None)                                             │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_7                                            │                               │                                                         │        │ 0.0%                 │
+│                                                        │ Difference Evaluation [GEval] │ 0.4 (threshold=0.5, evaluation model=Custom OpenRouter  │ FAILED │                      │
+│                                                        │                               │ AI Model, reason=The difference analysis correctly      │        │                      │
+│                                                        │                               │ identifies the critical mismatch in U.S. citizenship    │        │                      │
+│                                                        │                               │ and security clearance, which are mandatory per the job │        │                      │
+│                                                        │                               │ description and absent in the resume, demonstrating     │        │                      │
+│                                                        │                               │ relevance and clarity. However, it fails to address     │        │                      │
+│                                                        │                               │ other key differences such as the required DoD 8570     │        │                      │
+│                                                        │                               │ certification (CISSP/Security+), the preferred          │        │                      │
+│                                                        │                               │ Bachelor's degree, and the unspecified time overlap     │        │                      │
+│                                                        │                               │ with Eastern Time, making it incomplete and not fully   │        │                      │
+│                                                        │                               │ aligned with step 4's demand for accurate and           │        │                      │
+│                                                        │                               │ comprehensive point identification. The match score of  │        │                      │
+│                                                        │                               │ 35 is reasonable given multiple mismatches, but the     │        │                      │
+│                                                        │                               │ analysis's narrow focus undermines its overall          │        │                      │
+│                                                        │                               │ alignment with the evaluation steps., error=None)       │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_8                                            │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.5 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The mismatch analysis is relevant and  │        │                      │
+│                                                        │                               │ specific, correctly pointing out key gaps such as       │        │                      │
+│                                                        │                               │ missing DoD certifications, secret clearance, and       │        │                      │
+│                                                        │                               │ explicit Linux/Unix experience, which are critical      │        │                      │
+│                                                        │                               │ mandatory requirements from the job description.        │        │                      │
+│                                                        │                               │ However, the assigned score of 65 is unreasonably high  │        │                      │
+│                                                        │                               │ given these fundamental mismatches, and the analysis    │        │                      │
+│                                                        │                               │ includes a weak point about PHP experience since the    │        │                      │
+│                                                        │                               │ resume demonstrates JavaScript skills via React.js,     │        │                      │
+│                                                        │                               │ likely meeting the second language requirement.,        │        │                      │
+│                                                        │                               │ error=None)                                             │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_9                                            │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.7 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The output provides a reasonable match │        │                      │
+│                                                        │                               │ score of 65 and identifies key differences between the  │        │                      │
+│                                                        │                               │ resume and job description, such as programming         │        │                      │
+│                                                        │                               │ languages, Linux/Unix skills, and required              │        │                      │
+│                                                        │                               │ certifications. However, the analysis is somewhat       │        │                      │
+│                                                        │                               │ repetitive, with points 3 and 4 overlapping             │        │                      │
+│                                                        │                               │ significantly (both addressing security certifications  │        │                      │
+│                                                        │                               │ and clearance). Additionally, some points like          │        │                      │
+│                                                        │                               │ multilingual skills and general tools/frameworks are    │        │                      │
+│                                                        │                               │ not directly relevant to the job requirements and       │        │                      │
+│                                                        │                               │ dilute the focus of the analysis. The explanation is    │        │                      │
+│                                                        │                               │ clear but could be more concise and targeted.,          │        │                      │
+│                                                        │                               │ error=None)                                             │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_10                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.7 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The matching score of 35 is reasonable │        │                      │
+│                                                        │                               │ given the significant gaps between the candidate's      │        │                      │
+│                                                        │                               │ frontend-focused background and the job's               │        │                      │
+│                                                        │                               │ backend/Linux/security requirements. The analysis       │        │                      │
+│                                                        │                               │ accurately identifies key mismatches: lack of required  │        │                      │
+│                                                        │                               │ backend languages (Python/Perl/PHP), absence of DoD     │        │                      │
+│                                                        │                               │ certification and U.S. citizenship, and less relevant   │        │                      │
+│                                                        │                               │ experience in customer support vs. system               │        │                      │
+│                                                        │                               │ administration. However, the explanation could be       │        │                      │
+│                                                        │                               │ clearer about the 35-point rationale and doesn't        │        │                      │
+│                                                        │                               │ explicitly address the 5+ years experience requirement  │        │                      │
+│                                                        │                               │ or the Eastern Time overlap constraint. The analysis is │        │                      │
+│                                                        │                               │ specific and avoids generic statements, though it could │        │                      │
+│                                                        │                               │ better explain why certain frontend skills don't        │        │                      │
+│                                                        │                               │ translate to this backend role., error=None)            │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_11                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.7 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The output provides a reasonable match │        │                      │
+│                                                        │                               │ score of 65, which aligns with the significant gaps     │        │                      │
+│                                                        │                               │ between the resume and job requirements (lack of        │        │                      │
+│                                                        │                               │ security clearance, citizenship requirements, specific  │        │                      │
+│                                                        │                               │ technical skills). The differences analysis is relevant │        │                      │
+│                                                        │                               │ and specific, identifying concrete mismatches like      │        │                      │
+│                                                        │                               │ missing DoD 8570 certification, Linux/Unix skills, and  │        │                      │
+│                                                        │                               │ programming language requirements. The analysis is      │        │                      │
+│                                                        │                               │ clear and directly addresses the resume content versus  │        │                      │
+│                                                        │                               │ position needs. However, the score could be more        │        │                      │
+│                                                        │                               │ precise given the extensive mismatch in requirements,   │        │                      │
+│                                                        │                               │ and some points like 'art/design experience' are        │        │                      │
+│                                                        │                               │ somewhat subjective. Overall, the analysis is targeted  │        │                      │
+│                                                        │                               │ and logical, though not perfect., error=None)           │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_12                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.7 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The output provides a reasonable match │        │                      │
+│                                                        │                               │ score of 60, reflecting the mismatch between the        │        │                      │
+│                                                        │                               │ candidate's education (MBA and Master's in Computerized │        │                      │
+│                                                        │                               │ Economics) and the job's requirement for a Computer     │        │                      │
+│                                                        │                               │ Science degree. The difference analysis is relevant,    │        │                      │
+│                                                        │                               │ specific, and clearly explains the education gap as a   │        │                      │
+│                                                        │                               │ significant mismatch. However, the analysis is          │        │                      │
+│                                                        │                               │ incomplete as it only addresses the education aspect    │        │                      │
+│                                                        │                               │ and omits other critical differences, such as the lack  │        │                      │
+│                                                        │                               │ of C++ and financial domain knowledge required by the   │        │                      │
+│                                                        │                               │ job. Despite this, the existing analysis is accurate    │        │                      │
+│                                                        │                               │ and well-articulated., error=None)                      │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_13                                           │                               │                                                         │        │ 100.0%                 │
+│                                                        │ Difference Evaluation [GEval] │ 1.0 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The match score of 45 is reasonable,   │        │                      │
+│                                                        │                               │ reflecting key mismatches: resume's 18+ years senior    │        │                      │
+│                                                        │                               │ experience versus job's 1-4 years, undefined education  │        │                      │
+│                                                        │                               │ versus mandatory CS degree, and embedded/defense        │        │                      │
+│                                                        │                               │ project focus versus fintech domain. Difference         │        │                      │
+│                                                        │                               │ analysis is directly relevant, specifically cites input │        │                      │
+│                                                        │                               │ details like skill gaps in Python memory management and │        │                      │
+│                                                        │                               │ parser design, reasonably explains impacts, and is      │        │                      │
+│                                                        │                               │ clearly expressed without vagueness, fully meeting all  │        │                      │
+│                                                        │                               │ evaluation criteria., error=None)                       │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_14                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.6 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The difference analysis is relevant,   │        │                      │
+│                                                        │                               │ specific, reasonable, and clear, accurately             │        │                      │
+│                                                        │                               │ highlighting key mismatches such as the candidate's     │        │                      │
+│                                                        │                               │ web-focused skills (PHP, React.js, Node.js) versus      │        │                      │
+│                                                        │                               │ required financial tech skills (Python, Java, C++,      │        │                      │
+│                                                        │                               │ SQL), lack of Bloomberg or structured products          │        │                      │
+│                                                        │                               │ experience, and non-CS educational background. However, │        │                      │
+│                                                        │                               │ the match score of 60 is not fully reasonable as it     │        │                      │
+│                                                        │                               │ overstates alignment despite significant gaps in        │        │                      │
+│                                                        │                               │ mandatory qualifications like the required degree and   │        │                      │
+│                                                        │                               │ core programming skills, which should warrant a lower   │        │                      │
+│                                                        │                               │ score., error=None)                                     │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_15                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The actual output provides a           │        │                      │
+│                                                        │                               │ reasonable match score of 70 that aligns with the       │        │                      │
+│                                                        │                               │ evaluation steps. The differences analysis is highly    │        │                      │
+│                                                        │                               │ relevant, specific, and targeted - it correctly         │        │                      │
+│                                                        │                               │ identifies the candidate's lack of C++ proficiency,     │        │                      │
+│                                                        │                               │ absence of financial product development experience,    │        │                      │
+│                                                        │                               │ and potential location considerations. The analysis is  │        │                      │
+│                                                        │                               │ clear, logical, and directly addresses the resume's     │        │                      │
+│                                                        │                               │ strengths (Python/Java skills, full-stack experience)   │        │                      │
+│                                                        │                               │ and gaps (C++, financial domain expertise) compared to  │        │                      │
+│                                                        │                               │ the job requirements. All key points from the           │        │                      │
+│                                                        │                               │ evaluation steps are well-covered., error=None)         │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_16                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.7 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The match score of 65 reasonably       │        │                      │
+│                                                        │                               │ reflects partial alignment, as the resume shares Java   │        │                      │
+│                                                        │                               │ and C++ skills with the job description but lacks the   │        │                      │
+│                                                        │                               │ mandatory Python expertise and financial domain         │        │                      │
+│                                                        │                               │ knowledge. The difference analysis is relevant and      │        │                      │
+│                                                        │                               │ specific, accurately pinpointing these key gaps and     │        │                      │
+│                                                        │                               │ their impact, with clear expression. However, it fails  │        │                      │
+│                                                        │                               │ to address other required missing skills such as SQL    │        │                      │
+│                                                        │                               │ and UNIX, which are explicitly listed in the job        │        │                      │
+│                                                        │                               │ description and absent from the resume, reducing        │        │                      │
+│                                                        │                               │ comprehensiveness., error=None)                         │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_17                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The score of 60% is reasonable given   │        │                      │
+│                                                        │                               │ the candidate's lack of Python skills, financial        │        │                      │
+│                                                        │                               │ product experience, Bloomberg terminal development,     │        │                      │
+│                                                        │                               │ C++, and UNIX expertise, along with the educational     │        │                      │
+│                                                        │                               │ mismatch (Software Engineering vs. Computer Science).   │        │                      │
+│                                                        │                               │ The analysis is highly relevant, specific, and targeted │        │                      │
+│                                                        │                               │ to the input content, clearly identifying the key gaps  │        │                      │
+│                                                        │                               │ between the resume and job requirements. The reasoning  │        │                      │
+│                                                        │                               │ is logical and well-structured, making the analysis     │        │                      │
+│                                                        │                               │ clear and easy to understand., error=None)              │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_18                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.8 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The difference analysis is relevant    │        │                      │
+│                                                        │                               │ and targeted, correctly identifying key gaps such as    │        │                      │
+│                                                        │                               │ lack of PHP experience for Drupal development and       │        │                      │
+│                                                        │                               │ specific AWS services like Lambda and Cloudfront.       │        │                      │
+│                                                        │                               │ However, it inaccurately claims that Continuous         │        │                      │
+│                                                        │                               │ Integration setup experience is not explicitly          │        │                      │
+│                                                        │                               │ mentioned, while the resume lists 'CI/CD (Jenkins)',    │        │                      │
+│                                                        │                               │ which directly implies CI setup. Other aspects,         │        │                      │
+│                                                        │                               │ including clarity and reasonableness of the analysis,   │        │                      │
+│                                                        │                               │ are strong, but this oversight affects overall          │        │                      │
+│                                                        │                               │ alignment., error=None)                                 │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_19                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.8 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The score of 75 for matching degree is │        │                      │
+│                                                        │                               │ reasonable as the resume shows strong backend-related   │        │                      │
+│                                                        │                               │ skills (PHP, Python, Go, RESTful APIs, databases) that  │        │                      │
+│                                                        │                               │ align with the job requirements. The analysis correctly │        │                      │
+│                                                        │                               │ identifies the lack of explicit career goals in the     │        │                      │
+│                                                        │                               │ resume and connects it to the job title mismatch. The   │        │                      │
+│                                                        │                               │ explanation is clear and specific to the input,         │        │                      │
+│                                                        │                               │ avoiding generic statements. The analysis is logical    │        │                      │
+│                                                        │                               │ and directly addresses the actual content differences   │        │                      │
+│                                                        │                               │ between the resume and job description., error=None)    │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_20                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.7 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The response provides a reasonable     │        │                      │
+│                                                        │                               │ match score of 65, which aligns with the evaluation     │        │                      │
+│                                                        │                               │ steps' requirement for a reasonable match score. The    │        │                      │
+│                                                        │                               │ analysis identifies key differences between the resume  │        │                      │
+│                                                        │                               │ and job description, such as Drupal experience, backend │        │                      │
+│                                                        │                               │ vs full-stack focus, and specific AWS services.         │        │                      │
+│                                                        │                               │ However, the analysis could be more specific about the  │        │                      │
+│                                                        │                               │ candidate's 3+ years of experience in PHP/Python/Go,    │        │                      │
+│                                                        │                               │ and the lack of TDD/CI setup experience. The response   │        │                      │
+│                                                        │                               │ is clear and concise, meeting the requirement for clear │        │                      │
+│                                                        │                               │ expression., error=None)                                │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_21                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.5 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The difference analysis is relevant    │        │                      │
+│                                                        │                               │ and targeted, accurately listing specific mismatches    │        │                      │
+│                                                        │                               │ like frontend emphasis vs backend role and missing      │        │                      │
+│                                                        │                               │ AWS/PHP skills, but it fails to analyze the reasons or  │        │                      │
+│                                                        │                               │ impacts of these differences per step 4. The match      │        │                      │
+│                                                        │                               │ score of 55 appears unreasonable given the analysis,    │        │                      │
+│                                                        │                               │ which indicates low compatibility due to significant    │        │                      │
+│                                                        │                               │ technology and role misalignment., error=None)          │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_22                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 1.0 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model,                                               │        │                      │
+│                                                        │                               │ reason=差异点分析精准针对简历和职位内容，具体指出候选 … │        │                      │
+│                                                        │                               │ error=None)                                             │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_23                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.7 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The score of 35 is reasonable as the   │        │                      │
+│                                                        │                               │ candidate lacks key backend skills required by the job, │        │                      │
+│                                                        │                               │ including PHP/Python/Go experience, RabbitMQ/Redis, and │        │                      │
+│                                                        │                               │ AWS expertise. The analysis correctly identifies        │        │                      │
+│                                                        │                               │ mismatches between the candidate's frontend focus and   │        │                      │
+│                                                        │                               │ the job's backend requirements. However, the analysis   │        │                      │
+│                                                        │                               │ could be more comprehensive - it doesn't mention the    │        │                      │
+│                                                        │                               │ candidate's lack of experience with microservices       │        │                      │
+│                                                        │                               │ architecture, test-driven development, or continuous    │        │                      │
+│                                                        │                               │ integration, which are explicitly required. The         │        │                      │
+│                                                        │                               │ assessment is generally accurate but misses some        │        │                      │
+│                                                        │                               │ specific requirements from the job description.,        │        │                      │
+│                                                        │                               │ error=None)                                             │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_24                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.5 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The matching score of 75 is reasonable │        │                      │
+│                                                        │                               │ given the candidate's strong Java experience but lack   │        │                      │
+│                                                        │                               │ of specific secondary skills and potential education    │        │                      │
+│                                                        │                               │ mismatch. However, the difference analysis fails to     │        │                      │
+│                                                        │                               │ explain the significance or impact of the differences,  │        │                      │
+│                                                        │                               │ includes irrelevant points (industry focus, cultural    │        │                      │
+│                                                        │                               │ communication), misinterprets the IDE requirement       │        │                      │
+│                                                        │                               │ (Eclipse or similar is acceptable), and has confusing   │        │                      │
+│                                                        │                               │ phrasing in point 1. Thus, it only partially meets the  │        │                      │
+│                                                        │                               │ evaluation criteria., error=None)                       │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_25                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.8 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The score of 70 for matching degree is │        │                      │
+│                                                        │                               │ reasonable given the candidate's strong technical       │        │                      │
+│                                                        │                               │ background but lack of specific qualifications like a   │        │                      │
+│                                                        │                               │ Bachelor's degree and experience with required          │        │                      │
+│                                                        │                               │ technologies such as C#, Elastic Search, and Oracle     │        │                      │
+│                                                        │                               │ databases. The differences analysis is relevant,        │        │                      │
+│                                                        │                               │ addressing specific gaps like the missing degree, the   │        │                      │
+│                                                        │                               │ broader skill set versus the job's Java focus, and the  │        │                      │
+│                                                        │                               │ mismatch in technology preferences (Linux/open-source   │        │                      │
+│                                                        │                               │ vs. Windows/Oracle). The analysis is targeted, citing   │        │                      │
+│                                                        │                               │ concrete examples from the resume and job description,  │        │                      │
+│                                                        │                               │ and logically explains how these gaps could impact      │        │                      │
+│                                                        │                               │ suitability for the role. The explanation is clear and  │        │                      │
+│                                                        │                               │ well-structured, avoiding vague or contradictory        │        │                      │
+│                                                        │                               │ statements., error=None)                                │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_26                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 1.0 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The response demonstrates strong       │        │                      │
+│                                                        │                               │ alignment with the evaluation steps by providing a      │        │                      │
+│                                                        │                               │ reasonable matching score (35) that reflects the        │        │                      │
+│                                                        │                               │ significant gaps between the resume and job             │        │                      │
+│                                                        │                               │ description. The difference analysis is highly          │        │                      │
+│                                                        │                               │ relevant, targeted, and reasonable, accurately          │        │                      │
+│                                                        │                               │ identifying specific issues such as the complete lack   │        │                      │
+│                                                        │                               │ of Java experience, potential degree misalignment,      │        │                      │
+│                                                        │                               │ absence of required secondary skills (e.g., C#,         │        │                      │
+│                                                        │                               │ Oracle), and mismatch in project focus. The analysis is │        │                      │
+│                                                        │                               │ clear, logically structured, and directly grounded in   │        │                      │
+│                                                        │                               │ the input details, with no vague or contradictory       │        │                      │
+│                                                        │                               │ expressions., error=None)                               │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_27                                           │                               │                                                         │        │ 0.0%                 │
+│                                                        │ Difference Evaluation [GEval] │ 0.2 (threshold=0.5, evaluation model=Custom OpenRouter  │ FAILED │                      │
+│                                                        │                               │ AI Model,                                               │        │                      │
+│                                                        │                               │ reason=匹配度分数85过高，未合理反映简历中缺失职位描述 … │        │                      │
+│                                                        │                               │ error=None)                                             │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_28                                           │                               │                                                         │        │ 0.0%                 │
+│                                                        │ Difference Evaluation [GEval] │ 0.4 (threshold=0.5, evaluation model=Custom OpenRouter  │ FAILED │                      │
+│                                                        │                               │ AI Model,                                               │        │                      │
+│                                                        │                               │ reason=匹配度分数70未合理反映简历与职位描述的匹配程度 … │        │                      │
+│                                                        │                               │ Search等次要技能缺乏，忽略了核心要求对齐问题。,         │        │                      │
+│                                                        │                               │ error=None)                                             │        │                      │
+│                                                        │                               │                                                         │        │                      │
+│ test_case_29                                           │                               │                                                         │        │ 100.0%               │
+│                                                        │ Difference Evaluation [GEval] │ 0.6 (threshold=0.5, evaluation model=Custom OpenRouter  │ PASSED │                      │
+│                                                        │                               │ AI Model, reason=The difference analysis is relevant,   │        │                      │
+│                                                        │                               │ specific, reasonable, and clear, accurately pointing    │        │                      │
+│                                                        │                               │ out key gaps like missing C#, Elastic Search, Oracle,   │        │                      │
+│                                                        │                               │ security, and deployment experience, and acknowledging  │        │                      │
+│                                                        │                               │ the education match and potential value of frontend     │        │                      │
+│                                                        │                               │ skills. However, the match score of 70 is not           │        │                      │
+│                                                        │                               │ reasonably justified, as the analysis highlights        │        │                      │
+│                                                        │                               │ multiple critical mismatches with the job requirements, │        │                      │
+│                                                        │                               │ such as unspecified Java experience years and absent    │        │                      │
+│                                                        │                               │ secondary skills, suggesting a lower overall match      │        │                      │
+│                                                        │                               │ degree., error=None)                                    │        │                      │
+│ Note: Use Confident AI with DeepEval to analyze failed │                               │                                                         │        │                      │
+│ test cases for more details                            │                               │                                                         │        │                      │
+└────────────────────────────────────────────────────────┴───────────────────────────────┴─────────────────────────────────────────────────────────┴────────┴──────────────────────┘
+
+⚠ WARNING: No hyperparameters logged.
+» Log hyperparameters to attribute prompts and models to your test runs.
+
+================================================================================
+Results saved in ./deepeval_data as 20260305_125848
+
+
+✓ Evaluation completed 🎉! (time taken: 1817.87s | token cost: None)
+» Test Results (30 total tests):
+   » Pass Rate: 86.67% | Passed: 26 | Failed: 4
+
+ ================================================================================ 
+
+» Want to share evals with your team, or a place for your test cases to live? ❤️ 🏡
+  » Run 'deepeval view' to analyze and save testing results on Confident AI.
+

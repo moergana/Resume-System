@@ -5,6 +5,7 @@ import os
 import sys
 
 from langchain_milvus import BM25BuiltInFunction, Milvus
+from rdflib import collection
 import redis
 from langchain_chroma import Chroma
 from langchain_core.runnables import RunnableConfig
@@ -168,6 +169,10 @@ JD_vectordb = Chroma(
 # 初始化Milvus向量数据库实例
 # Milvus相比于Chroma，具有更高的性能和可扩展性，适合处理大规模的向量数据和高并发的查询请求。
 # 首先，定义Milvus向量数据库的collection在本地保存的文件路径（这和Chroma使用一个目录是不同的）
+milvus_collection_dir = os.path.join(workspace_root, "milvus_data")
+if not os.path.exists(milvus_collection_dir):
+    os.makedirs(milvus_collection_dir)
+    logging.info(f"Created directory for Milvus collections at {milvus_collection_dir}.")
 resume_collection_db_file = os.path.join(workspace_root, "ResumeAnalyse", "milvus_data", "resumes_collection.db")
 JD_collection_db_file = os.path.join(workspace_root, "ResumeAnalyse", "milvus_data", "JDs_collection.db")
 

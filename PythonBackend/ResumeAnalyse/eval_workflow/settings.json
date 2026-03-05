@@ -1,0 +1,37 @@
+{
+  "PostgreSQL": {
+    "Host": "localhost",
+    "Port": 5433,
+    "Database": "resume_system",
+    "Username": "postgres",
+    "Password": "post040325sql"
+  },
+
+  "MySQL": {
+    "Host": "localhost",
+    "Port": 3306,
+    "Database": "resume_system_test",
+    "Username": "root",
+    "Password": "WX040325sql9017"
+  },
+
+  "Redis": {
+    "Host": "localhost",
+    "Port": 6379,
+    "Password": "wangxin123",
+    "Database": 1,
+    "Decode_Responses": true
+  },
+
+  "Model": {
+    "Embed_Model_Name": "/root/pretrained_model/Qwen3-Embedding-0.6B"
+  },
+
+  "RabbitMQ": {
+    "Host": "localhost",
+    "Port": 5672,
+    "Virtual_Host": "/resumesys",
+    "Username": "resumesys",
+    "Password": "resume123"
+  }
+}

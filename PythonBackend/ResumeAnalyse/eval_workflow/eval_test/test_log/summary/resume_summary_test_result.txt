@@ -1,0 +1,557 @@
+                                                                           Test Results                                                                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Test case                                    ┃ Metric                            ┃ Score                                        ┃ Status ┃ Overall Success Rate ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+│ test_case_0                                  │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.6 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The response     │        │                      │
+│                                              │                                   │ accurately summarizes education, work        │        │                      │
+│                                              │                                   │ experience, projects, and skills from the    │        │                      │
+│                                              │                                   │ input with good conciseness and coverage,    │        │                      │
+│                                              │                                   │ but includes two significant fidelity        │        │                      │
+│                                              │                                   │ issues: it fabricates an age of 30 not       │        │                      │
+│                                              │                                   │ present in the input, and in the             │        │                      │
+│                                              │                                   │ comprehensive summary, misstates language    │        │                      │
+│                                              │                                   │ fluency as Chinese, English, Russian instead │        │                      │
+│                                              │                                   │ of the input's Hebrew, English, Russian,     │        │                      │
+│                                              │                                   │ deviating from source content., error=None)  │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_1                                  │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model,                         │        │                      │
+│                                              │                                   │ reason=实际输出准确、全面、精炼且忠实地反映… │        │                      │
+│                                              │                                   │ error=None)                                  │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_2                                  │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The actual       │        │                      │
+│                                              │                                   │ output demonstrates strong alignment with    │        │                      │
+│                                              │                                   │ the evaluation steps across all dimensions.  │        │                      │
+│                                              │                                   │ It accurately captures key information from  │        │                      │
+│                                              │                                   │ the input, including education background    │        │                      │
+│                                              │                                   │ (Belarusian State University and MCB         │        │                      │
+│                                              │                                   │ degrees), work experience (Tanndu, BOOKIE    │        │                      │
+│                                              │                                   │ iGaming, Mapsoft), project experiences (API  │        │                      │
+│                                              │                                   │ integration, ReactJS, Webpack migration,     │        │                      │
+│                                              │                                   │ Symfony), and professional skills (PHP,      │        │                      │
+│                                              │                                   │ Node.js, React.js, MySQL/PostgreSQL, desired │        │                      │
+│                                              │                                   │ to learn Python/Golang). The content is      │        │                      │
+│                                              │                                   │ comprehensive, covering major details like   │        │                      │
+│                                              │                                   │ AWS/Heroku deployment, software design       │        │                      │
+│                                              │                                   │ patterns, and soft skills. The summary is    │        │                      │
+│                                              │                                   │ concise and well-organized without           │        │                      │
+│                                              │                                   │ redundancy. The output remains faithful to   │        │                      │
+│                                              │                                   │ the input without adding contradictory       │        │                      │
+│                                              │                                   │ information, though some fields are marked   │        │                      │
+│                                              │                                   │ as '未知' (unknown) where information wasn'… │        │                      │
+│                                              │                                   │ explicitly provided in the input.,           │        │                      │
+│                                              │                                   │ error=None)                                  │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_3                                  │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The actual       │        │                      │
+│                                              │                                   │ output demonstrates strong alignment with    │        │                      │
+│                                              │                                   │ the evaluation steps across all dimensions.  │        │                      │
+│                                              │                                   │ It accurately reflects key information from  │        │                      │
+│                                              │                                   │ the input (accurate job titles, years of     │        │                      │
+│                                              │                                   │ experience, technical skills),               │        │                      │
+│                                              │                                   │ comprehensively covers major sections        │        │                      │
+│                                              │                                   │ (education, work experience, skills,         │        │                      │
+│                                              │                                   │ projects), uses concise language to          │        │                      │
+│                                              │                                   │ summarize core content without excessive     │        │                      │
+│                                              │                                   │ redundancy, and remains faithful to the      │        │                      │
+│                                              │                                   │ input without adding fabricated information. │        │                      │
+│                                              │                                   │ The only minor issue is some minor           │        │                      │
+│                                              │                                   │ formatting inconsistencies in the education  │        │                      │
+│                                              │                                   │ field, but this doesn't affect the overall   │        │                      │
+│                                              │                                   │ quality of the summary., error=None)         │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_4                                  │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.5 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The response     │        │                      │
+│                                              │                                   │ accurately summarizes education, work        │        │                      │
+│                                              │                                   │ experiences, and project details from the    │        │                      │
+│                                              │                                   │ input, with concise and relevant             │        │                      │
+│                                              │                                   │ information. However, it fabricates the      │        │                      │
+│                                              │                                   │ '年龄' (age) as 30, which is not present in  │        │                      │
+│                                              │                                   │ the input, violating fidelity. Additionally, │        │                      │
+│                                              │                                   │ the '专业技能' omits some tools mentioned i… │        │                      │
+│                                              │                                   │ the input (e.g., IDE tools like WebStorm,    │        │                      │
+│                                              │                                   │ collaboration tools like Slack), and the     │        │                      │
+│                                              │                                   │ '综合素质总结' overstates 'full-stack        │        │                      │
+│                                              │                                   │ applications' despite the input focusing     │        │                      │
+│                                              │                                   │ primarily on frontend development. These     │        │                      │
+│                                              │                                   │ inaccuracies and omissions reduce alignment  │        │                      │
+│                                              │                                   │ with the evaluation steps., error=None)      │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_5                                  │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.5 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The response     │        │                      │
+│                                              │                                   │ demonstrates accuracy in extracting          │        │                      │
+│                                              │                                   │ education details, work experience titles,   │        │                      │
+│                                              │                                   │ project achievements, certificates, and      │        │                      │
+│                                              │                                   │ career objective from the input. However, it │        │                      │
+│                                              │                                   │ falls short in comprehensiveness by not      │        │                      │
+│                                              │                                   │ including job responsibilities from the      │        │                      │
+│                                              │                                   │ input (e.g., database development, frontend  │        │                      │
+│                                              │                                   │ tasks), missing specific technologies like   │        │                      │
+│                                              │                                   │ Spring Data JPA and Spring Security,         │        │                      │
+│                                              │                                   │ omitting the Russian language proficiency,   │        │                      │
+│                                              │                                   │ and excluding provided links (GitHub,        │        │                      │
+│                                              │                                   │ LinkedIn, Artstation). The summary is        │        │                      │
+│                                              │                                   │ concise and faithful to the input's core but │        │                      │
+│                                              │                                   │ does not fully encapsulate all key details,  │        │                      │
+│                                              │                                   │ such as the 'studied independently' aspect   │        │                      │
+│                                              │                                   │ and complete skill set., error=None)         │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_6                                  │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.8 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The output       │        │                      │
+│                                              │                                   │ accurately captures key information such as  │        │                      │
+│                                              │                                   │ education, work experience, skills, and      │        │                      │
+│                                              │                                   │ certifications. It is comprehensive in       │        │                      │
+│                                              │                                   │ covering major sections like education, work │        │                      │
+│                                              │                                   │ experience, projects, and skills. The        │        │                      │
+│                                              │                                   │ language is concise and avoids redundancy.   │        │                      │
+│                                              │                                   │ However, the output adds some details not    │        │                      │
+│                                              │                                   │ explicitly in the input, such as             │        │                      │
+│                                              │                                   │ 'professional proficiency in English and     │        │                      │
+│                                              │                                   │ basic Hebrew' under '综合素质总结', which i… │        │                      │
+│                                              │                                   │ not directly stated in the input. This       │        │                      │
+│                                              │                                   │ slightly affects the faithfulness            │        │                      │
+│                                              │                                   │ criterion., error=None)                      │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_7                                  │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.8 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The actual       │        │                      │
+│                                              │                                   │ output provides a structured summary of the  │        │                      │
+│                                              │                                   │ input, covering key aspects like education,  │        │                      │
+│                                              │                                   │ work experience, projects, and skills. It    │        │                      │
+│                                              │                                   │ accurately reflects the input's content,     │        │                      │
+│                                              │                                   │ including specific details like the          │        │                      │
+│                                              │                                   │ developer's transition from Android to       │        │                      │
+│                                              │                                   │ Golang, blockchain/digital currency          │        │                      │
+│                                              │                                   │ expertise, and language proficiencies.       │        │                      │
+│                                              │                                   │ However, some fields like '姓名' (name) and  │        │                      │
+│                                              │                                   │ '年龄' (age) are added without clear basis   │        │                      │
+│                                              │                                   │ in the input, which slightly affects the     │        │                      │
+│                                              │                                   │ accuracy and faithfulness. The output is     │        │                      │
+│                                              │                                   │ comprehensive and concise, capturing the     │        │                      │
+│                                              │                                   │ essence of the input while avoiding          │        │                      │
+│                                              │                                   │ unnecessary details. Overall, it aligns well │        │                      │
+│                                              │                                   │ with the evaluation criteria but has minor   │        │                      │
+│                                              │                                   │ issues with inferred information.,           │        │                      │
+│                                              │                                   │ error=None)                                  │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_8                                  │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.5 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The response     │        │                      │
+│                                              │                                   │ accurately captures education details and    │        │                      │
+│                                              │                                   │ technical skills from the input but omits    │        │                      │
+│                                              │                                   │ key information such as residence (Herzliya) │        │                      │
+│                                              │                                   │ and languages (English, Hebrew, Ukrainian,   │        │                      │
+│                                              │                                   │ Russian). Work experience is condensed but   │        │                      │
+│                                              │                                   │ misses specific points like outsourcing      │        │                      │
+│                                              │                                   │ tasks and NodeJS/WebSocket development       │        │                      │
+│                                              │                                   │ mentioned in the 2017-2021 role. Added       │        │                      │
+│                                              │                                   │ fields like job objective and overall        │        │                      │
+│                                              │                                   │ summary are inferred and not explicit in the │        │                      │
+│                                              │                                   │ input, which affects comprehensiveness and   │        │                      │
+│                                              │                                   │ fidelity despite being contextually          │        │                      │
+│                                              │                                   │ reasonable., error=None)                     │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_9                                  │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.7 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The actual       │        │                      │
+│                                              │                                   │ output accurately captures key information   │        │                      │
+│                                              │                                   │ from the input, including education, work    │        │                      │
+│                                              │                                   │ experience, professional skills, and career  │        │                      │
+│                                              │                                   │ objective. It is comprehensive in covering   │        │                      │
+│                                              │                                   │ major sections like education, work          │        │                      │
+│                                              │                                   │ experience, and skills. The content is       │        │                      │
+│                                              │                                   │ concise and avoids redundancy. However, the  │        │                      │
+│                                              │                                   │ actual output adds some inferred information │        │                      │
+│                                              │                                   │ (e.g., '年龄: 0', '姓名: 未知', and the      │        │                      │
+│                                              │                                   │ comprehensive summary at the end) that is    │        │                      │
+│                                              │                                   │ not present in the input, which slightly     │        │                      │
+│                                              │                                   │ affects the faithfulness criterion. The      │        │                      │
+│                                              │                                   │ structure and formatting differ from the     │        │                      │
+│                                              │                                   │ input, but the core content is               │        │                      │
+│                                              │                                   │ well-represented., error=None)               │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_10                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The actual       │        │                      │
+│                                              │                                   │ output accurately summarizes the key         │        │                      │
+│                                              │                                   │ information from the input, including        │        │                      │
+│                                              │                                   │ personal details (age 36), education         │        │                      │
+│                                              │                                   │ (bachelor's degree and bootcamp), work       │        │                      │
+│                                              │                                   │ experience (Senior .NET Engineer, Team Lead, │        │                      │
+│                                              │                                   │ Bootcamp Manager), technical skills (C#,     │        │                      │
+│                                              │                                   │ .NET, Angular, databases, cloud platforms),  │        │                      │
+│                                              │                                   │ and additional qualifications (certificates, │        │                      │
+│                                              │                                   │ language skills). The content is             │        │                      │
+│                                              │                                   │ comprehensive, covering all major aspects of │        │                      │
+│                                              │                                   │ the input. It is concise and avoids          │        │                      │
+│                                              │                                   │ redundancy. The summary is faithful to the   │        │                      │
+│                                              │                                   │ input without adding extraneous information. │        │                      │
+│                                              │                                   │ Minor discrepancies in the education         │        │                      │
+│                                              │                                   │ timeline (input states 2011-2019, output     │        │                      │
+│                                              │                                   │ shows 2011-2019 for bachelor's and 2022 for  │        │                      │
+│                                              │                                   │ bootcamp) are acceptable as the core content │        │                      │
+│                                              │                                   │ aligns. The output effectively condenses the │        │                      │
+│                                              │                                   │ lengthy input into a structured and          │        │                      │
+│                                              │                                   │ informative summary., error=None)            │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_11                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The              │        │                      │
+│                                              │                                   │ actual_output accurately summarizes the      │        │                      │
+│                                              │                                   │ input resume with high precision, covering   │        │                      │
+│                                              │                                   │ education, work experience, project          │        │                      │
+│                                              │                                   │ experience, and technical skills             │        │                      │
+│                                              │                                   │ comprehensively. The education section       │        │                      │
+│                                              │                                   │ correctly lists the bachelor's degree and    │        │                      │
+│                                              │                                   │ online courses with dates. Work experience   │        │                      │
+│                                              │                                   │ is detailed for each role, including job     │        │                      │
+│                                              │                                   │ titles, dates, companies, and                │        │                      │
+│                                              │                                   │ responsibilities, matching the input         │        │                      │
+│                                              │                                   │ closely. Project experience is extracted     │        │                      │
+│                                              │                                   │ accurately from the work history. Technical  │        │                      │
+│                                              │                                   │ skills are well-organized into categories    │        │                      │
+│                                              │                                   │ (Programming Languages, Web Technologies,    │        │                      │
+│                                              │                                   │ Tools, Environments) and align with the      │        │                      │
+│                                              │                                   │ input's detailed lists. The summary at the   │        │                      │
+│                                              │                                   │ end effectively captures the candidate's     │        │                      │
+│                                              │                                   │ profile. The output is concise and avoids    │        │                      │
+│                                              │                                   │ redundancy while remaining faithful to the   │        │                      │
+│                                              │                                   │ input. Minor omissions like phone number and │        │                      │
+│                                              │                                   │ email are acceptable as they are not         │        │                      │
+│                                              │                                   │ required for a structured summary. Overall,  │        │                      │
+│                                              │                                   │ the output demonstrates strong alignment     │        │                      │
+│                                              │                                   │ with the evaluation criteria of accuracy,    │        │                      │
+│                                              │                                   │ comprehensiveness, conciseness, and          │        │                      │
+│                                              │                                   │ faithfulness., error=None)                   │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_12                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.8 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The actual       │        │                      │
+│                                              │                                   │ output demonstrates strong accuracy by       │        │                      │
+│                                              │                                   │ correctly extracting key information from    │        │                      │
+│                                              │                                   │ the input, such as education, work           │        │                      │
+│                                              │                                   │ experience, and skills. It comprehensively   │        │                      │
+│                                              │                                   │ covers major details like job roles,         │        │                      │
+│                                              │                                   │ technologies used, and achievements. The     │        │                      │
+│                                              │                                   │ summary is concise and avoids redundancy,    │        │                      │
+│                                              │                                   │ focusing on core content. However, some      │        │                      │
+│                                              │                                   │ details like the specific project            │        │                      │
+│                                              │                                   │ descriptions are slightly generalized, and   │        │                      │
+│                                              │                                   │ the '求职目标' field adds inferred           │        │                      │
+│                                              │                                   │ information not explicitly stated in the     │        │                      │
+│                                              │                                   │ input. Despite these minor issues, the       │        │                      │
+│                                              │                                   │ output remains faithful to the input's       │        │                      │
+│                                              │                                   │ overall content and intent., error=None)     │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_13                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The actual       │        │                      │
+│                                              │                                   │ output demonstrates strong alignment with    │        │                      │
+│                                              │                                   │ the evaluation steps. It accurately captures │        │                      │
+│                                              │                                   │ key information from the input, including    │        │                      │
+│                                              │                                   │ birth year (1990), city (Kiriat Yam,         │        │                      │
+│                                              │                                   │ Israel), professional skills (SQL, PL/SQL,   │        │                      │
+│                                              │                                   │ C#, Python), experience details, education   │        │                      │
+│                                              │                                   │ background, and hobbies. The content is      │        │                      │
+│                                              │                                   │ comprehensive, covering all major sections   │        │                      │
+│                                              │                                   │ from the input including work experience,    │        │                      │
+│                                              │                                   │ projects, skills, and personal details. The  │        │                      │
+│                                              │                                   │ language is concise and well-structured,     │        │                      │
+│                                              │                                   │ avoiding redundancy while maintaining        │        │                      │
+│                                              │                                   │ clarity. The output remains faithful to the  │        │                      │
+│                                              │                                   │ original content without adding extraneous   │        │                      │
+│                                              │                                   │ information or fabricating details. Minor    │        │                      │
+│                                              │                                   │ issues like '年龄: 33' (which could be       │        │                      │
+│                                              │                                   │ calculated from 1990) and '求职目标: 未知'   │        │                      │
+│                                              │                                   │ (not mentioned in input) are present but     │        │                      │
+│                                              │                                   │ don't significantly impact the overall       │        │                      │
+│                                              │                                   │ quality., error=None)                        │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_14                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The actual       │        │                      │
+│                                              │                                   │ output demonstrates strong alignment with    │        │                      │
+│                                              │                                   │ the evaluation steps. It accurately captures │        │                      │
+│                                              │                                   │ key information from the input, including    │        │                      │
+│                                              │                                   │ detailed work experience, projects, skills,  │        │                      │
+│                                              │                                   │ and education. The content is comprehensive, │        │                      │
+│                                              │                                   │ covering all major sections of the input     │        │                      │
+│                                              │                                   │ resume. It is concise and well-structured,   │        │                      │
+│                                              │                                   │ avoiding redundant information while         │        │                      │
+│                                              │                                   │ maintaining clarity. The output is faithful  │        │                      │
+│                                              │                                   │ to the input, without adding fabricated      │        │                      │
+│                                              │                                   │ details or deviating from the original       │        │                      │
+│                                              │                                   │ content. Minor omissions, such as the        │        │                      │
+│                                              │                                   │ absence of explicit age and name, do not     │        │                      │
+│                                              │                                   │ significantly impact the overall quality of  │        │                      │
+│                                              │                                   │ the summary. The summary effectively         │        │                      │
+│                                              │                                   │ condenses the input into a structured        │        │                      │
+│                                              │                                   │ format, highlighting the candidate's         │        │                      │
+│                                              │                                   │ expertise and experience in Android          │        │                      │
+│                                              │                                   │ development., error=None)                    │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_15                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The actual       │        │                      │
+│                                              │                                   │ output demonstrates strong alignment with    │        │                      │
+│                                              │                                   │ the evaluation steps. It accurately captures │        │                      │
+│                                              │                                   │ key information from the input, including    │        │                      │
+│                                              │                                   │ education (Moscow Aviation Institute,        │        │                      │
+│                                              │                                   │ Honours degree, Computing machines), work    │        │                      │
+│                                              │                                   │ experience (roles and companies), projects   │        │                      │
+│                                              │                                   │ (Aviabit Web, Electronic Flight Bag), and    │        │                      │
+│                                              │                                   │ skills (React, TypeScript, databases). The   │        │                      │
+│                                              │                                   │ summary is comprehensive, covering all major │        │                      │
+│                                              │                                   │ sections from the input. The language is     │        │                      │
+│                                              │                                   │ concise and avoids redundancy. The output    │        │                      │
+│                                              │                                   │ remains faithful to the input without adding │        │                      │
+│                                              │                                   │ extraneous information. Minor issues include │        │                      │
+│                                              │                                   │ '姓名' and '年龄' being marked as unknown/0… │        │                      │
+│                                              │                                   │ but this reflects the absence of such data   │        │                      │
+│                                              │                                   │ in the input, maintaining accuracy.,         │        │                      │
+│                                              │                                   │ error=None)                                  │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_16                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The actual       │        │                      │
+│                                              │                                   │ output demonstrates strong accuracy,         │        │                      │
+│                                              │                                   │ comprehensiveness, conciseness, and          │        │                      │
+│                                              │                                   │ faithfulness to the input. It correctly      │        │                      │
+│                                              │                                   │ identifies key details such as Angelina's    │        │                      │
+│                                              │                                   │ name, education (BA and MA in Jurisprudence, │        │                      │
+│                                              │                                   │ MASA Web Development Course), work           │        │                      │
+│                                              │                                   │ experience (Front End Developer Intern at    │        │                      │
+│                                              │                                   │ SERVC, Legal Adviser at Nornickel, Freelance │        │                      │
+│                                              │                                   │ SQL Developer), projects (quiz game,         │        │                      │
+│                                              │                                   │ calculator, redesigned tables, component     │        │                      │
+│                                              │                                   │ library, login page rewrite), skills (HTML,  │        │                      │
+│                                              │                                   │ CSS, JavaScript, SQL, Angular, Hebrew,       │        │                      │
+│                                              │                                   │ English, Russian), and career transition     │        │                      │
+│                                              │                                   │ goal. The summary is concise and avoids      │        │                      │
+│                                              │                                   │ redundancy while covering all major aspects  │        │                      │
+│                                              │                                   │ of the input. The only minor issue is the    │        │                      │
+│                                              │                                   │ '年龄: 0' field, which is not present in th… │        │                      │
+│                                              │                                   │ input but does not detract from the overall  │        │                      │
+│                                              │                                   │ quality of the summary., error=None)         │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_17                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.6 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=Actual Output    │        │                      │
+│                                              │                                   │ faithfully reproduces key content from       │        │                      │
+│                                              │                                   │ input, including education, certificates,    │        │                      │
+│                                              │                                   │ and personal traits, but has significant     │        │                      │
+│                                              │                                   │ redundancy and misclassification. Items like │        │                      │
+│                                              │                                   │ 'Working knowledge of Agile, Jira and Git'   │        │                      │
+│                                              │                                   │ and 'Common knowledge of TCP/IP protocol and │        │                      │
+│                                              │                                   │ SSL' appear in both '工作经验' and           │        │                      │
+│                                              │                                   │ '专业技能', violating conciseness. Moreover… │        │                      │
+│                                              │                                   │ '工作经验' incorrectly includes skill-based  │        │                      │
+│                                              │                                   │ entries such as 'Basic knowledge of Java',   │        │                      │
+│                                              │                                   │ which should reside solely under '专业技能'… │        │                      │
+│                                              │                                   │ compromising accuracy in attribute           │        │                      │
+│                                              │                                   │ representation., error=None)                 │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_18                                 │                                   │                                              │        │ 0.0%                 │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.3 (threshold=0.5, evaluation model=Custom  │ FAILED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=actual_output    │        │                      │
+│                                              │                                   │ 在全面性和忠实性上存在显著缺陷：遗漏了 inpu… │        │                      │
+│                                              │                                   │ 中的关键 Full stack developer                │        │                      │
+│                                              │                                   │ 工作经验（2016年3月-2017年2月），该职位涉及… │        │                      │
+│                                              │                                   │ PHP/Java 和前端 Angular JS                   │        │                      │
+│                                              │                                   │ 等重要细节；同时添加了未在 input             │        │                      │
+│                                              │                                   │ 中提供的年龄信息（31岁），违反了忠实性要求 … │        │                      │
+│                                              │                                   │ input                                        │        │                      │
+│                                              │                                   │ 内容，但核心工作经验的缺失和虚构信息导致整 … │        │                      │
+│                                              │                                   │ error=None)                                  │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_19                                 │                                   │                                              │        │ 0.0%                 │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.4 (threshold=0.5, evaluation model=Custom  │ FAILED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The              │        │                      │
+│                                              │                                   │ actual_output accurately summarizes work     │        │                      │
+│                                              │                                   │ experience, projects, and most skills from   │        │                      │
+│                                              │                                   │ the input but commits key fidelity errors:   │        │                      │
+│                                              │                                   │ it fabricates an age (33) not present in the │        │                      │
+│                                              │                                   │ input, adds unsupported industries (legal,   │        │                      │
+│                                              │                                   │ finance) to the job-seeking goal, omits the  │        │                      │
+│                                              │                                   │ 2020 special program from education, and     │        │                      │
+│                                              │                                   │ misstates experience duration as over 5      │        │                      │
+│                                              │                                   │ years versus the input's explicit 4 years.   │        │                      │
+│                                              │                                   │ These additions and omissions undermine      │        │                      │
+│                                              │                                   │ accuracy and fidelity despite comprehensive  │        │                      │
+│                                              │                                   │ coverage of core content., error=None)       │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_20                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.8 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The actual       │        │                      │
+│                                              │                                   │ output captures the core professional        │        │                      │
+│                                              │                                   │ experience, technical skills, and project    │        │                      │
+│                                              │                                   │ details accurately and comprehensively. It   │        │                      │
+│                                              │                                   │ summarizes the programming languages,        │        │                      │
+│                                              │                                   │ frameworks, databases, and architectures     │        │                      │
+│                                              │                                   │ used, and includes the key project 'Mobile   │        │                      │
+│                                              │                                   │ Wallet' with relevant technologies. The      │        │                      │
+│                                              │                                   │ summary also reflects the candidate's role   │        │                      │
+│                                              │                                   │ as an independent developer and their        │        │                      │
+│                                              │                                   │ experience in product development and UI     │        │                      │
+│                                              │                                   │ design. However, the output includes fields  │        │                      │
+│                                              │                                   │ like '姓名', '年龄', and '求职目标' which    │        │                      │
+│                                              │                                   │ are not supported by the input, introducing  │        │                      │
+│                                              │                                   │ unsupported information. Additionally, the   │        │                      │
+│                                              │                                   │ '综合素质总结' adds a synthesized            │        │                      │
+│                                              │                                   │ interpretation that, while reasonable, is    │        │                      │
+│                                              │                                   │ not directly stated in the input. Despite    │        │                      │
+│                                              │                                   │ these minor issues, the core content is      │        │                      │
+│                                              │                                   │ accurate, comprehensive, and                 │        │                      │
+│                                              │                                   │ well-summarized., error=None)                │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_21                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.6 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model,                         │        │                      │
+│                                              │                                   │ reason=实际输出在姓名、教育背景、工作经验和… │        │                      │
+│                                              │                                   │ shortcomings 降低了准确性和忠实性。,         │        │                      │
+│                                              │                                   │ error=None)                                  │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_22                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.6 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model,                         │        │                      │
+│                                              │                                   │ reason=实际输出在准确性上基本可靠，如教育背… │        │                      │
+│                                              │                                   │ error=None)                                  │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_23                                 │                                   │                                              │        │ 0.0%                 │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.4 (threshold=0.5, evaluation model=Custom  │ FAILED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The              │        │                      │
+│                                              │                                   │ actual_output accurately reflects education  │        │                      │
+│                                              │                                   │ and professional skills from input, but has  │        │                      │
+│                                              │                                   │ inaccuracies: age is set to 0 with no input  │        │                      │
+│                                              │                                   │ data, project experience is incorrectly      │        │                      │
+│                                              │                                   │ marked as '未提供' despite input mentioning  │        │                      │
+│                                              │                                   │ a latest project, and work experience        │        │                      │
+│                                              │                                   │ summaries omit key responsibilities (e.g.,   │        │                      │
+│                                              │                                   │ specific tools and tasks), reducing          │        │                      │
+│                                              │                                   │ comprehensiveness and accuracy., error=None) │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_24                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The actual       │        │                      │
+│                                              │                                   │ output accurately captures the key           │        │                      │
+│                                              │                                   │ information from the input, including name,  │        │                      │
+│                                              │                                   │ age, education, work experience, skills, and │        │                      │
+│                                              │                                   │ language proficiency. It is comprehensive,   │        │                      │
+│                                              │                                   │ covering all major sections like education,  │        │                      │
+│                                              │                                   │ work experience, skills, and languages. The  │        │                      │
+│                                              │                                   │ content is concise and avoids redundancy.    │        │                      │
+│                                              │                                   │ However, there is a minor issue with the     │        │                      │
+│                                              │                                   │ '项目经历' field, which includes only part   │        │                      │
+│                                              │                                   │ of the work experience details rather than a │        │                      │
+│                                              │                                   │ separate project description, slightly       │        │                      │
+│                                              │                                   │ reducing comprehensiveness. Overall, the     │        │                      │
+│                                              │                                   │ output is faithful to the input and          │        │                      │
+│                                              │                                   │ maintains high accuracy., error=None)        │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_25                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.5 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=Inaccurate name  │        │                      │
+│                                              │                                   │ transliteration (output 'Leonid Shalae' vs   │        │                      │
+│                                              │                                   │ input 'LEONID SHALAEV'), added educational   │        │                      │
+│                                              │                                   │ institution 'Volgograd State Technical       │        │                      │
+│                                              │                                   │ University' not present in input, and        │        │                      │
+│                                              │                                   │ incomplete skills list omitting key          │        │                      │
+│                                              │                                   │ technologies like Maven, Gradle, and Spring  │        │                      │
+│                                              │                                   │ Cloud from input. However, work experience   │        │                      │
+│                                              │                                   │ and project summary accurately reflect input │        │                      │
+│                                              │                                   │ details., error=None)                        │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_26                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.6 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The actual       │        │                      │
+│                                              │                                   │ output captures most key information from    │        │                      │
+│                                              │                                   │ the input, including technical skills, work  │        │                      │
+│                                              │                                   │ experience, and education, but contains      │        │                      │
+│                                              │                                   │ several inaccuracies and omissions. It       │        │                      │
+│                                              │                                   │ incorrectly lists all roles under 'GPB' when │        │                      │
+│                                              │                                   │ the input shows different companies for each │        │                      │
+│                                              │                                   │ role. The '求职目标' field adds information  │        │                      │
+│                                              │                                   │ not present in the input. While the output   │        │                      │
+│                                              │                                   │ is concise and covers major topics, these    │        │                      │
+│                                              │                                   │ inaccuracies and the addition of             │        │                      │
+│                                              │                                   │ non-existent information affect the accuracy │        │                      │
+│                                              │                                   │ and faithfulness scores., error=None)        │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_27                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.7 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=Actual Output    │        │                      │
+│                                              │                                   │ 准确反映了教育背景、工作经验和求职目标，但 … │        │                      │
+│                                              │                                   │ native, English                              │        │                      │
+│                                              │                                   │ advanced）纳入专业技能字段；其他属性如项目 … │        │                      │
+│                                              │                                   │ error=None)                                  │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_28                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.7 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The actual       │        │                      │
+│                                              │                                   │ output accurately captures key information   │        │                      │
+│                                              │                                   │ from the input, including education, work    │        │                      │
+│                                              │                                   │ experience, skills, and projects. It is      │        │                      │
+│                                              │                                   │ comprehensive, covering all major sections   │        │                      │
+│                                              │                                   │ of the resume. The content is concise and    │        │                      │
+│                                              │                                   │ avoids redundancy. However, there are some   │        │                      │
+│                                              │                                   │ issues with fidelity: the actual output      │        │                      │
+│                                              │                                   │ invents fields like '姓名', '年龄',          │        │                      │
+│                                              │                                   │ '求职目标', '相关证书', and '综合素质总结'   │        │                      │
+│                                              │                                   │ that are not present in the input.           │        │                      │
+│                                              │                                   │ Additionally, some details like 'Cloud       │        │                      │
+│                                              │                                   │ database migration assessment' and 'P2P car  │        │                      │
+│                                              │                                   │ sharing' are listed as projects, which may   │        │                      │
+│                                              │                                   │ not be explicitly stated as such in the      │        │                      │
+│                                              │                                   │ input. Despite these minor deviations, the   │        │                      │
+│                                              │                                   │ core content is well-summarized and aligned  │        │                      │
+│                                              │                                   │ with the input., error=None)                 │        │                      │
+│                                              │                                   │                                              │        │                      │
+│ test_case_29                                 │                                   │                                              │        │ 100.0%               │
+│                                              │ Resume Summary Evaluation [GEval] │ 0.9 (threshold=0.5, evaluation model=Custom  │ PASSED │                      │
+│                                              │                                   │ OpenRouter AI Model, reason=The output       │        │                      │
+│                                              │                                   │ demonstrates strong alignment with the       │        │                      │
+│                                              │                                   │ evaluation steps. It accurately reflects key │        │                      │
+│                                              │                                   │ information from the input, such as the      │        │                      │
+│                                              │                                   │ candidate's experience at Amdocs and Most    │        │                      │
+│                                              │                                   │ Technologies, technical skills (Java, Spring │        │                      │
+│                                              │                                   │ Boot, Hibernate, etc.), and education at     │        │                      │
+│                                              │                                   │ Tel-Ran Educational Center. The summary is   │        │                      │
+│                                              │                                   │ comprehensive, covering major sections like  │        │                      │
+│                                              │                                   │ experience, skills, and projects. It is      │        │                      │
+│                                              │                                   │ concise, avoiding redundancy while capturing │        │                      │
+│                                              │                                   │ essential details. The output remains        │        │                      │
+│                                              │                                   │ faithful to the input, without adding        │        │                      │
+│                                              │                                   │ unsupported information. Minor               │        │                      │
+│                                              │                                   │ discrepancies, such as the age (21) not      │        │                      │
+│                                              │                                   │ being explicitly stated in the input, are    │        │                      │
+│                                              │                                   │ negligible given the overall alignment with  │        │                      │
+│                                              │                                   │ the evaluation criteria., error=None)        │        │                      │
+│ Note: Use Confident AI with DeepEval to      │                                   │                                              │        │                      │
+│ analyze failed test cases for more details   │                                   │                                              │        │                      │
+└──────────────────────────────────────────────┴───────────────────────────────────┴──────────────────────────────────────────────┴────────┴──────────────────────┘
+
+⚠ WARNING: No hyperparameters logged.
+» Log hyperparameters to attribute prompts and models to your test runs.
+
+================================================================================
+Results saved in ./deepeval_data as 20260304_193117
+
+
+✓ Evaluation completed 🎉! (time taken: 2738.38s | token cost: None)
+» Test Results (30 total tests):
+   » Pass Rate: 90.00% | Passed: 27 | Failed: 3
+
+ ================================================================================ 
+
+» Want to share evals with your team, or a place for your test cases to live? ❤️ 🏡
+  » Run 'deepeval view' to analyze and save testing results on Confident AI.
+
