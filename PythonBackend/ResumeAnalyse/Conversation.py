@@ -47,6 +47,7 @@ conversation_system_prompt_template = PromptTemplate.from_template(template=
 
 以下是你需要记住的重要信息：
 
+###
 1. 用户的身份：{user_role}
 
 2. 用户提供的简历内容概述如下：
@@ -54,13 +55,14 @@ conversation_system_prompt_template = PromptTemplate.from_template(template=
 
 3. 用户提供的职位描述内容概述如下：
 {jd_summary_text}
+###
 
 4. 用户经过智能简历分析系统，目前得到的分析结果如下：
-简历与职位描述的匹配度分数（百分制。如果是负数比如-1，则表示分数无效）：{match_score}
+简历与职位描述的匹配度分数（百分制。如果是-1或其他负数值，则表示分数无效！）：{match_score}
 简历与职位描述的差异点（如果为空，请忽略该字段）：{differences}
 简历改进建议（如果为空，请忽略该字段）：{resume_advice}
 求职建议（如果为空，请忽略该字段）：{job_hunting_advice}
-**注意事项：以上出现值为空或者无效的字段的话，这类字段就不具有参考必要，你应当忽略！并在需要时，尝试从对话历史（如果有的话）中获取相关信息！**
+**注意事项：以上出现值为空或者无效的字段的话，这类字段就不具有参考必要，你应当忽略或告知用户你获取到了无效的信息！并在需要时，尝试从对话历史（如果有的话）中获取相关信息！**
 
 5. 请注意你拥有以下工具：
 (1) 网络搜索工具：可以帮助你获取最新的新闻、信息和数据，特别是在你遇到不熟悉的领域或者不确定的问题时，可以通过调用网络搜索工具来获取最新的信息，并以此辅助你更好地回答用户的问题。
@@ -140,7 +142,7 @@ summarize_agent = create_agent(
 )
 
 
-def compress_context(context: List[BaseMessage]) -> str:
+async def compress_context(context: List[BaseMessage]) -> str:
     """
     如果上下文过长，则使用总结智能体进行压缩。
     :param context: 原始上下文字符串
@@ -149,7 +151,7 @@ def compress_context(context: List[BaseMessage]) -> str:
     # 构造新的消息列表用于调用总结智能体，避免修改原始 context 列表
     invoke_messages = context + [HumanMessage(content=summarize_prompt)]
     logging.info("总结智能体压缩上下文中...")
-    response = summarize_agent.invoke(
+    response = await summarize_agent.ainvoke(
         input={ "messages": invoke_messages }
     )
 
@@ -167,7 +169,7 @@ def compress_context(context: List[BaseMessage]) -> str:
     return compressed_context
 
 
-def manage_context(state: ConversationState, config: RunnableConfig):
+async def manage_context(state: ConversationState, config: RunnableConfig):
     """
     管理对话上下文。如果上下文过长，则进行总结压缩。
     :param state: 当前对话状态
@@ -208,14 +210,14 @@ def manage_context(state: ConversationState, config: RunnableConfig):
     if need_compress:
         # 上下文过长，进行总结压缩
         logging.info("上下文过长，开始进行总结压缩...")
-        compressed_context = compress_context(messages_to_compress)
+        compressed_context = await compress_context(messages_to_compress)
         logging.info("上下文总结压缩完成。")
 
         # 使用RemoveMessage清空原有消息，只保留压缩后的摘要作为新的上下文
         # 注意：RemoveMessage 只会删除指定ID的消息在当前Graph的state中的数据，而不会修改数据库中的记录
         # 但是这不会导致重启会话加载原本删除的上下文，因为checkpointer加载最后一次保存的状态（checkpoint）时，已经不包含这些消息了
-        remove_messages_id = [RemoveMessage(id=msg.id) for msg in messages_to_compress]
-        new_messages = remove_messages_id + [AIMessage(content=compressed_context)]
+        remove_messages = [RemoveMessage(id=msg.id) for msg in messages_to_compress]
+        new_messages = remove_messages + [AIMessage(content=compressed_context)]
 
         return {
             "summary": compressed_context,
@@ -290,12 +292,16 @@ conversation_graph.add_node("manage_context", manage_context)
 conversation_graph.add_node("call_agent", call_agent)
 
 # 边定义
+# 这里START结点同时连接到manage_context和call_agent这两个异步方法，可以做到两个结点并发执行。
+# 这样的好处是manage_context结点如果要总结上下文，该操作不会阻塞call_agent结点的执行，从而提升响应速度和用户体验。
 conversation_graph.add_edge(START, "manage_context")
-conversation_graph.add_edge("manage_context", "call_agent")
+conversation_graph.add_edge(START, "call_agent")
+conversation_graph.add_edge("manage_context", END)
 conversation_graph.add_edge("call_agent", END)
 
 # 全局的对话Graph执行器实例，采用懒加载的方式初始化
 conversation_graph_executor: CompiledStateGraph[StateT, ContextT, InputT, OutputT] = None
+conversation_graph_executor_with_checkpointer: CompiledStateGraph[StateT, ContextT, InputT, OutputT] = None
 
 
 async def init_graph_executor():
@@ -303,16 +309,21 @@ async def init_graph_executor():
     获取对话Graph的执行器实例，采用懒加载的方式。
     :return: Conversation Graph的执行器实例
     """
-    global conversation_graph_executor
+    global conversation_graph_executor, conversation_graph_executor_with_checkpointer
     # 获取初始化锁，确保多协程并发安全
     async with init_lock:
         # 双重检查，确保在获取锁期间没有其他线程已经初始化了executor
-        if conversation_graph_executor is None:
+        if conversation_graph_executor_with_checkpointer is None:
             # 使用定义好的 conversation_graph 编译执行器，传入 checkpointer 以实现对话状态持久化
-            conversation_graph_executor = conversation_graph.compile(
+            conversation_graph_executor_with_checkpointer = conversation_graph.compile(
                 checkpointer=await utils.get_pooled_checkpointer(),
             )
-            logging.info("Conversation Graph Executor 初始化完成。")
+            logging.info("Conversation Graph Executor With Checkpointer 初始化完成。")
+        
+        if conversation_graph_executor is None:
+            # 不使用checkpointer的executor，适用于不需要持久化的临时会话
+            conversation_graph_executor = conversation_graph.compile()
+            logging.info("Conversation Graph Executor Without Checkpointer 初始化完成。")
 
 
 async def init_conversation_agent(thread_id: str,
@@ -451,12 +462,18 @@ async def invoke_agent_in_background(queue: asyncio.Queue, message: str, convers
         await queue.put(None)
 
 
-async def invoke_conversation_graph_in_background(queue: asyncio.Queue, message: str, conversation_agent, config):
+async def invoke_conversation_graph_in_background(
+    queue: asyncio.Queue, 
+    message: str, 
+    conversation_agent: CompiledStateGraph[TypedDict, ContextT, _InputAgentState, TypedDict], 
+    graph_executor: CompiledStateGraph[StateT, ContextT, InputT, OutputT], 
+    config: dict
+):
     """
     当用户输入完毕，发起一次调用后，在后台运行Conversation Graph，并将流式输出块放入队列。
     """
-    # 确保初始化了 conversation_graph_executor
-    if conversation_graph_executor is None:
+    # 确保初始化了 conversation_graph_executor_with_checkpointer
+    if graph_executor is None:
         await init_graph_executor()
 
     # 构造初始状态
@@ -481,7 +498,7 @@ async def invoke_conversation_graph_in_background(queue: asyncio.Queue, message:
 
     # 使用指定的 config 调用 Conversation Graph
     try:
-        await conversation_graph_executor.ainvoke(
+        await graph_executor.ainvoke(
             input=initial_state,
             config=run_config
         )
@@ -530,8 +547,9 @@ async def chat_with_agent(message: str, history: list, request: gradio.Request):
     
     task = None
     try:
-        # 确保初始化了 conversation_graph_executor
-        if conversation_graph_executor is None:
+        
+        # 确保初始化了 conversation_graph_executor_with_checkpointer
+        if conversation_graph_executor_with_checkpointer is None:
             await init_graph_executor()
         
         # 获取当前用户的唯一会话 ID (对应浏览器的一个 Tab)
@@ -543,6 +561,11 @@ async def chat_with_agent(message: str, history: list, request: gradio.Request):
         analysis_id = params.get("analysis_id", "")  # 获取 analysis_id 参数（如果不存在则用空字符串代替）
 
         logging.info(f"收到来自 session_id: {session_id} 的请求, analysis_id: {analysis_id}")
+        
+        graph_need_memory = True  # Graph默认需要记忆功能
+        if analysis_id == "":
+            logging.info(f"Session {session_id} 未提供 analysis_id 参数，进入无预生成数据的临时会话模式。")
+            graph_need_memory = False  # 没有 analysis_id，说明没有预生成数据，进入临时会话模式，不需要记忆功能
 
         # 判断对话智能体是否已经被初始化。如果没有就调用init_conversation_agent
         # 需要注意init_conversation_agent方法所需的参数从thread_local中获取
@@ -678,9 +701,16 @@ async def chat_with_agent(message: str, history: list, request: gradio.Request):
         config = user_context["conversation_config"]
 
         queue = asyncio.Queue()
+        
+        if graph_need_memory:
+            logging.info(f"会话 {session_id} 需要记忆功能，将使用持久化的 Conversation Graph Executor With Checkpointer。")
+            graph_executor = conversation_graph_executor_with_checkpointer
+        else:
+            logging.info(f"会话 {session_id} 不需要记忆功能，将使用不带持久化的 Conversation Graph Executor。")
+            graph_executor = conversation_graph_executor
 
-        # 启动后台任务，让模型根据用户的输入生成回复（不要await，应该用asyncio开启一个新的后台任务）
-        task = asyncio.create_task(invoke_conversation_graph_in_background(queue, message, conversation_agent, config))
+        # 启动后台任务，让模型根据用户的输入生成回复（不要await，应该用asyncio在事件循环中添加一个新的任务，且当前协程不等待它）
+        task = asyncio.create_task(invoke_conversation_graph_in_background(queue, message, conversation_agent, graph_executor, config))
 
         full_response = ""
 
