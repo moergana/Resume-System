@@ -1,0 +1,5 @@
+{
+  "java.compile.nullAnalysis.mode": "automatic",
+  "java.jdt.ls.java.home": "F:\\SDK\\Java\\jdk-11",
+  "java.configuration.updateBuildConfiguration": "interactive"
+}

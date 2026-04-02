@@ -71,7 +71,7 @@ CREATE TABLE `tb_resume_analysis`  (
     resume_id bigint(20) UNSIGNED NOT NULL COMMENT '被分析的简历ID，关联tb_resume表',
     jd_id bigint(20) UNSIGNED NOT NULL COMMENT '关联的职位ID，关联tb_jd表',
     request_type varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '请求类型，如匹配度分析、优势劣势分析等',
-    status int NOT NULL DEFAULT 0 COMMENT '分析状态，0-未开始，1-进行中，2-已完成，3-失败',
+    `status` int NOT NULL DEFAULT 0 COMMENT '分析状态，0-未开始，1-进行中，2-已完成，3-失败',
     analysis_result text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '简历分析结果，存储为JSON格式',
     retrieved_resumes text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '检索到的相关简历信息，存储为JSON格式',
     retrieved_jds text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL COMMENT '检索到的相关职位信息，存储为JSON格式',

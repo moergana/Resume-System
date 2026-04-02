@@ -4,6 +4,7 @@ import VueMarkdown from 'vue-markdown-render'
 import { useRoute } from 'vue-router'
 import request from '@/utils/request.js'
 import {
+  AI_API_BASE_URL,
   ANALYSIS_RESULT_PANEL_VALUE,
   BASIC_INFO_PANEL_VALUE, BONUS_PANEL_VALUE, DESCRIPTION_PANEL_VALUE, DIFFERENCES_PANEL_VALUE, REQUIREMENTS_PANEL_VALUE,
   RESUME_JD_INFO_PANEL_VALUE, RETRIEVED_JDS_PANEL_VALUE, RETRIEVED_RESUMES_PANEL_VALUE,
@@ -161,7 +162,8 @@ const isEmpty = (val) => {
 
 const openChatBot = () => {
   if (analysisData.value && analysisData.value.id) {
-    window.open(`http://localhost:7860/?analysis_id=${analysisData.value.id}`, '_blank')
+    const chatUrl = `${AI_API_BASE_URL}/?analysis_id=${analysisData.value.id}`
+    window.open(chatUrl, '_blank')
   }
 }
 

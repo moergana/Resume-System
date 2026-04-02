@@ -1,0 +1,95 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: ResumeGateway
+  # Redis 配置（与 ResumeSystem 共用同一 Redis 实例）
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    database: 1
+    password: wangxin123
+  cloud:
+    # Spring Cloud Gateway 配置
+    gateway:
+      # 路由配置
+      routes:
+        # Java 后端路由：所有 /api/** 请求转发到 ResumeSystem
+        - id: resume-service
+          uri: http://localhost:8081
+          # 使用 Path 断言匹配 /api/** 路径，确保只有以 /api/ 开头的请求才会被转发到 ResumeSystem 路由
+          predicates:
+            - Path=/api/**
+          filters:
+            # 前缀剥离，StripPrefix=1 表示去掉资源路径的第一个路径片段（片段按照 / 分割）。
+            # 实际的效果就是：转发时去掉 /api 前缀，使后端接口路径保持不变
+            - StripPrefix=1
+        # Python 后端路由：所有 /ai/** 请求转发到 Python AI 服务
+        - id: ai-service
+          uri: http://localhost:7860
+          # 使用 Path 断言匹配 /ai/** 路径，确保只有以 /ai/ 开头的请求才会被转发到 Python AI 服务路由
+          predicates:
+            - Path=/ai/**
+          filters:
+            # 前缀剥离，StripPrefix=1 表示去掉资源路径的第一个路径片段（片段按照 / 分割）。
+            # 实际的效果就是：转发时去掉 /ai 前缀，使后端接口路径保持不变
+            - StripPrefix=1
+          metadata:
+            # 针对Python后端的路由增加元数据以配置超时，避免长时间生成回复时网关提前超时断开连接
+            response-timeout: 600000 # 响应超时时间(毫秒)，比如设为10分钟
+            connect-timeout: 30000   # 建立连接超时时间(毫秒)
+      # 全局 CORS 配置
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns:
+              - "http://localhost:*"
+              - "http://127.0.0.1:*"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
+      # 默认过滤器
+      default-filters:
+        # 在下游请求中移除敏感的 Host 头，避免后端服务解析错误
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
+# JWT 配置（与 ResumeSystem 使用相同的密钥库）
+jwt:
+  location: classpath:resumesystem.jks
+  alias: resumesystem
+  password: resumesystem123
+  tokenTTL: 86400
+  # 不需要 JWT 验证的白名单路径（注意：这里是去掉路由前缀后的路径）
+  exclude-paths:
+    - /user/login
+    - /user/register
+    - /user/register/emailCode
+    - /user/resetPassword
+    - /user/resetPassword/emailCode
+
+# 限流配置
+rate-limit:
+  # IP 级别限流
+  ip:
+    capacity: 100          # 桶容量
+    refill-tokens: 5       # 每次补充令牌数
+    refill-seconds: 1      # 补充间隔（秒）
+  # 全局总流量限流
+  global:
+    capacity: 1000         # 桶容量（较大）
+    refill-tokens: 200     # 每次补充令牌数（恢复速度快）
+    refill-seconds: 1      # 补充间隔（秒）
+  # Redis 中限流桶的过期时间
+  bucket-expiration-hours: 1
+
+logging:
+  level:
+    org.kira: info
+    org.springframework.cloud.gateway: info

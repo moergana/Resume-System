@@ -8,11 +8,14 @@ import org.kira.resumesystem.utils.UserThreadLocal;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * 添加登录拦截器
+ * 登录拦截器
+ * 负责从请求头中获取JWT，验证其有效性，并将用户ID存入ThreadLocal供后续业务使用。
+ * Tips: 该拦截器已被 InternalUserInterceptor 替代，JWT认证逻辑已迁移到 Gateway 网关层统一处理，此处仅保留作为示例和备用方案。
  */
 @Slf4j
 @Component
@@ -24,8 +27,24 @@ public class AuthLoginInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         // 1. 从请求的header中尝试获取JWT
         try {
+            // 尝试从请求头中获取JWT
             String jwt = request.getHeader("Authorization");
+            
+            // 如果请求头中没有Authorization字段，尝试从Cookie中获取JWT
+            if (jwt == null || jwt.isEmpty()) {
+                if (request.getCookies() != null) {
+                    for (Cookie cookie : request.getCookies()) {
+                        if ("token".equals(cookie.getName())) {
+                            jwt = cookie.getValue();
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // 尝试从请求头中获取用户角色
             Integer role = Integer.valueOf(request.getHeader("Role"));
+
             // 2. 如果没有获取到JWT，说明用户未登录，拒绝访问
             if (jwt == null || jwt.isEmpty()) {
                 log.info("请求未携带Token，拒绝访问");
@@ -35,19 +54,21 @@ public class AuthLoginInterceptor implements HandlerInterceptor {
             }
             // 3. 如果获取到JWT，则尝试解析JWT，验证其有效性
             User user = jwtTool.parseToken(jwt);
-            // 4. JWT解析成功后，验证用户角色是否匹配
-            if (!user.getRole().equals(role)) {
+            // 4. JWT解析成功后，尝试验证用户角色是否匹配（如果请求头中携带了角色信息，则role不为null）
+            if (role != null && !user.getRole().equals(role)) {
                 log.info("用户角色不匹配，拒绝访问");
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setHeader("Message", "您的身份没有足够的访问权限，拒绝访问");
                 return false;
             }
+
             // 验证完毕后，将用户ID存入ThreadLocal，供后续业务使用
             UserThreadLocal.set(user.getId());
             // 创建一个新的JWT并放入响应头，延长用户会话
             String newJwt = jwtTool.createToken(user);
             response.setHeader("Authorization", newJwt);
-        } catch (Exception e) {
+        } 
+        catch (Exception e) {
             log.error("解析Token失败: {}", e.getMessage());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setHeader("Message", "无效的Token，请重新登录");
@@ -55,6 +76,7 @@ public class AuthLoginInterceptor implements HandlerInterceptor {
             UserThreadLocal.remove();
             return false;
         }
+
         // 4. JWT有效，允许访问
         return true;
     }

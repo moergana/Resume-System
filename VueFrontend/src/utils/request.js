@@ -1,9 +1,10 @@
 import axios from 'axios'
 import router from '../router'
 import { showGlobalMessage } from './globalMsg'
+import { JAVA_API_BASE_URL } from './constants'
 
 const service = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: JAVA_API_BASE_URL,
   timeout: 10000
 })
 

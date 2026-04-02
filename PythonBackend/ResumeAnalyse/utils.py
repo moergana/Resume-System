@@ -169,12 +169,12 @@ JD_vectordb = Chroma(
 # 初始化Milvus向量数据库实例
 # Milvus相比于Chroma，具有更高的性能和可扩展性，适合处理大规模的向量数据和高并发的查询请求。
 # 首先，定义Milvus向量数据库的collection在本地保存的文件路径（这和Chroma使用一个目录是不同的）
-milvus_collection_dir = os.path.join(workspace_root, "milvus_data")
+milvus_collection_dir = os.path.join(workspace_root, "ResumeAnalyse", "milvus_data")
 if not os.path.exists(milvus_collection_dir):
     os.makedirs(milvus_collection_dir)
     logging.info(f"Created directory for Milvus collections at {milvus_collection_dir}.")
-resume_collection_db_file = os.path.join(workspace_root, "ResumeAnalyse", "milvus_data", "resumes_collection.db")
-JD_collection_db_file = os.path.join(workspace_root, "ResumeAnalyse", "milvus_data", "JDs_collection.db")
+resume_collection_db_file = os.path.join(milvus_collection_dir, "resumes_collection.db")
+JD_collection_db_file = os.path.join(milvus_collection_dir, "JDs_collection.db")
 
 # 定义Milvus向量数据库实例，指定embedding_function、collection_name和connection_args等参数
 resume_vectordb = Milvus(
@@ -186,8 +186,22 @@ resume_vectordb = Milvus(
     # 混合检索必需的配置
     builtin_function=BM25BuiltInFunction(),
     vector_field=["dense", "sparse"],
+    # index_params参数详解：
+    # - metric_type: 指定使用的距离度量类型，COSINE表示使用余弦相似度，BM25表示使用BM25算法计算文本相关性。
+    # - index_type: 指定使用的索引类型。
+    #               FLAT表示暴力搜索全局最近邻，理论上最准确但耗时最长，适合于小数据量；
+    #               HNSW表示HNSW（分层导航小世界图）索引，是一种近似最近邻算法；
+    #               IVF_FLAT表示倒排文件索引，在Milvus-Lite中支持，通过K-Means将数据分簇，搜索时只比较目标簇，查询速度比FLAT快；
+    #               SPARSE_INVERTED_INDEX表示使用稀疏倒排索引，专门用于处理基于关键词匹配的稀疏向量。
+    # - params: 传递给索引构建的额外参数。
+    #           对于FLAT算法，不需要添加额外的参数。
+    #           对于HNSW算法，M参数控制每个节点的最大邻居结点数，efConstruction参数控制索引构建时的搜索深度，较大的值会提高索引质量但增加构建时间和内存使用。
+    #           对于IVF_FLAT算法，nlist参数控制聚类的簇数，值越大召回率越高但构建时间越长。
+    #           对于BM25算法，可以设置drop_ratio_build参数来控制构建索引时，舍弃最小的20%特征值（权重），以达到去噪效果。
     index_params=[
         {"metric_type": "COSINE", "index_type": "FLAT"},
+        # {"metric_type": "COSINE", "index_type": "HNSW", "params": {"M": 16, "efConstruction": 200}},
+        # {"metric_type": "COSINE", "index_type": "IVF_FLAT", "params": {"nlist": 128}},
         {"metric_type": "BM25", "index_type": "SPARSE_INVERTED_INDEX", "params": {"drop_ratio_build": 0.2}}
     ],
     auto_id=False,   # 禁用自动生成ID，需要在添加文档时手动指定ID，且ID必须是字符串类型。
@@ -205,6 +219,8 @@ JD_vectordb = Milvus(
     vector_field=["dense", "sparse"],
     index_params=[
         {"metric_type": "COSINE", "index_type": "FLAT"},
+        # {"metric_type": "COSINE", "index_type": "HNSW", "params": {"M": 16, "efConstruction": 200}},
+        # {"metric_type": "COSINE", "index_type": "IVF_FLAT", "params": {"nlist": 128}},
         {"metric_type": "BM25", "index_type": "SPARSE_INVERTED_INDEX", "params": {"drop_ratio_build": 0.2}}
     ],
     auto_id=False,   # 禁用自动生成ID，需要在添加文档时手动指定ID，且ID必须是字符串类型。

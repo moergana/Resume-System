@@ -13,6 +13,12 @@ export const SUPPORT_UPLOAD_FILE_TYPES = [
     'pdf', 'doc', 'docx', 'ppt', 'pptx'
 ]
 
+// Gateway base URLs 网关服务相关的基础URL
+// 前端所有请求都要通过网关访问后端服务，网关会根据请求路径转发到相应的后端服务
+export const GATEWAY_BASE_URL = 'http://localhost:8080'     // 网关本身的地址
+export const JAVA_API_BASE_URL = 'http://localhost:8080/api'    // 网关转发到Java后端服务的基础URL
+export const AI_API_BASE_URL = 'http://localhost:8080/ai'   // 网关转发到AI（Python）后端服务的基础URL
+
 // 分析请求处理状态映射表
 // 需要注意：{}定义的对象是普通对象，且不可迭代，并且键会被自动转换为字符串
 export const STATUS_MAP = {

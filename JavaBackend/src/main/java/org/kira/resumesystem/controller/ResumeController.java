@@ -82,8 +82,8 @@ public class ResumeController {
         return resumeService.deleteResumeById(id);
     }
 
-    @PostMapping("/download/{id}")
-    public ResponseEntity<FileSystemResource> downloadResume(@PathVariable("id") Long id) {
+    @GetMapping("/download/{id}")
+    public ResponseEntity<FileSystemResource> downloadResume(@PathVariable Long id) {
         log.info("Downloading resume with ID: {}", id);
         return resumeService.downloadResume(id);
     }

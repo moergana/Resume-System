@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8081
 spring:
   application:
    name: ResumeSystem
@@ -116,3 +116,11 @@ file:
   # user.dir为当前项目根路径
   resume_save_path: ${user.dir}/resumes   # 简历文件保存路径，保存在项目根目录下的resumes目录内
   jd_save_path: ${user.dir}/jds           # JD文件保存路径，保存在项目根目录下的jds目录内
+
+# 网关转发请求防伪造配置
+security:
+  gateway:
+    enabled: false   # 是否启用与Gateway侧的防伪造密钥校验。启用后会校验请求头中的internal-secret是否与配置值一致。
+    # 与 Gateway 侧保持一致，建议通过环境变量注入，不要提交到仓库
+    internal-secret: ${GATEWAY_INTERNAL_SECRET:}
+    internal-secret-header: X-Internal-Secret

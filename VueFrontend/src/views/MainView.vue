@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import {ROLE_MAP, CANDIDATE_NUMBER, RECRUITER_NUMBER, SUPPORT_UPLOAD_FILE_TYPES} from "@/utils/constants.js"
+import {AI_API_BASE_URL, ROLE_MAP, CANDIDATE_NUMBER, RECRUITER_NUMBER, SUPPORT_UPLOAD_FILE_TYPES} from "@/utils/constants.js"
 import request from '@/utils/request.js'
 import { formatDate, formatToISO } from "@/utils/tools.js";
 
@@ -800,6 +800,85 @@ const fetchResumes = async () => {
   }
 }
 
+// Pagination helpers (shared by candidate/recruiter lists)
+const getMaxPage = (totalPagesRef) => {
+  const total = Number(totalPagesRef.value)
+  return Number.isInteger(total) && total > 0 ? total : 1
+}
+
+const applyPageChange = ({ newPage, pageRef, totalPagesRef, loadingRef, fetcher }) => {
+  if (loadingRef.value) return
+
+  const targetPage = Number(newPage)
+  const maxPage = getMaxPage(totalPagesRef)
+
+  if (!Number.isInteger(targetPage) || targetPage < 1 || targetPage > maxPage) return
+  if (targetPage === pageRef.value) return
+
+  pageRef.value = targetPage
+  fetcher()
+}
+
+const applyJumpPage = ({ jumpPageRef, pageRef, totalPagesRef, loadingRef, fetcher }) => {
+  if (loadingRef.value) return
+
+  const targetPage = Number.parseInt(jumpPageRef.value, 10)
+  const maxPage = getMaxPage(totalPagesRef)
+
+  if (!Number.isInteger(targetPage) || targetPage < 1 || targetPage > maxPage) {
+    showSnackbar('请输入有效的页码', 'warning')
+    return
+  }
+
+  if (targetPage !== pageRef.value) {
+    pageRef.value = targetPage
+    fetcher()
+  }
+  jumpPageRef.value = ''
+}
+
+// Candidate pagination
+const handlePageChange = (newPage) => {
+  applyPageChange({
+    newPage,
+    pageRef: page,
+    totalPagesRef: totalPages,
+    loadingRef: loading,
+    fetcher: fetchResumes
+  })
+}
+
+const handleJumpPage = () => {
+  applyJumpPage({
+    jumpPageRef: jumpPage,
+    pageRef: page,
+    totalPagesRef: totalPages,
+    loadingRef: loading,
+    fetcher: fetchResumes
+  })
+}
+
+// Recruiter pagination
+const handleJdPageChange = (newPage) => {
+  applyPageChange({
+    newPage,
+    pageRef: jdPage,
+    totalPagesRef: jdTotalPages,
+    loadingRef: jdLoading,
+    fetcher: fetchPublishedJds
+  })
+}
+
+const handleJdJumpPage = () => {
+  applyJumpPage({
+    jumpPageRef: jdJumpPage,
+    pageRef: jdPage,
+    totalPagesRef: jdTotalPages,
+    loadingRef: jdLoading,
+    fetcher: fetchPublishedJds
+  })
+}
+
 // REMOVED fetchTotalPages
 
 /*
@@ -939,7 +1018,7 @@ const confirmMatch = async () => {
  */
 const handleDownload = async (id) => {
   try {
-    const res = await request.post(`/resume/download/${id}`, {}, {
+    const res = await request.get(`/resume/download/${id}`, {
       responseType: 'blob'
     })
 
@@ -1101,12 +1180,13 @@ const handleLogout = () => {
 }
 
 const openChatBot = () => {
-  window.open('http://localhost:7860/?analysis_id=', '_blank')
+  const chatUrl = `${AI_API_BASE_URL}/?analysis_id=`
+  window.open(chatUrl, '_blank')
 }
 </script>
 
 <template>
-  <div class="fill-height">
+handleJdDownload  <div class="fill-height">
     <v-app-bar color="white" elevation="2">
       <v-app-bar-title class="font-weight-bold text-black text-h5 ml-4">简历职位分析系统</v-app-bar-title>
       <v-spacer></v-spacer>

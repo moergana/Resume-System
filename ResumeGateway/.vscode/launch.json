@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-GatewayApplication<ResumeGateway>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "org.kira.gateway.GatewayApplication",
+            "projectName": "ResumeGateway",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

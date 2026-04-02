@@ -62,7 +62,12 @@ conversation_system_prompt_template = PromptTemplate.from_template(template=
 简历与职位描述的差异点（如果为空，请忽略该字段）：{differences}
 简历改进建议（如果为空，请忽略该字段）：{resume_advice}
 求职建议（如果为空，请忽略该字段）：{job_hunting_advice}
-**注意事项：以上出现值为空或者无效的字段的话，这类字段就不具有参考必要，你应当忽略或告知用户你获取到了无效的信息！并在需要时，尝试从对话历史（如果有的话）中获取相关信息！**
+***
+注意事项：
+1. 以上出现值为空或者无效的字段的话，不要参考这类字段的值，你应当忽略或告知用户你获取到了无效的信息！并在需要时，尝试从对话历史（如果有的话）中获取相关信息！
+2. 如果用户提供的信息不足以回答问题，你可以向用户提问以获取更多信息，或者直接告诉用户你无法回答这个问题。
+3. 你必须严格遵循分析结果中有效字段的值，不要忽略或违背有效字段的内容自行编造。例如，分析结果中匹配度分数为20，当用户询问时，你必须回答用户“简历与职位描述的匹配度分数为20%”，不要自行分析和编造结果！
+***
 
 5. 请注意你拥有以下工具：
 (1) 网络搜索工具：可以帮助你获取最新的新闻、信息和数据，特别是在你遇到不熟悉的领域或者不确定的问题时，可以通过调用网络搜索工具来获取最新的信息，并以此辅助你更好地回答用户的问题。
@@ -190,7 +195,11 @@ async def manage_context(state: ConversationState, config: RunnableConfig):
         return {}
 
     need_compress = False   # 是否需要压缩的标志
+    compute_error = False   # 判断上下文是否需要压缩时，是否出现错误的标志
+    
+    # 优先尝试使用 BaseChatModel对象的 get_num_tokens_from_messages 方法计算上下文的Token数量，以判断是否需要压缩
     try:
+        logging.info("尝试使用get_num_tokens_from_messages方法计算当前上下文的Token数量，以判断是否需要压缩...")
         # 计算当前上下文的Token数量
         context_token_count = conversation_llm.get_num_tokens_from_messages(messages_to_compress)
         # 获取设定的Token阈值
@@ -199,14 +208,44 @@ async def manage_context(state: ConversationState, config: RunnableConfig):
         if context_token_count >= max_tokens:
             need_compress = True
     except Exception as e:
-        logging.error(f"计算上下文Token数量时出现异常: {e}")
-        logging.info(f"将尝试使用对话轮数限制上下文长度。")
-        # 获取设定的对话轮数阈值
-        max_dialogues = state.get("max_dialogues", CONVERSATION_MAX_DIALOGUES)
-        # 如果计算Token数量失败，则使用对话轮数进行限制
-        if len(messages_to_compress) >= 2 * max_dialogues:   # 可压缩的对话轮数超过指定轮数则压缩
-            need_compress = True
-    # 如果上下文过长，超过了设定的token阈值，则进行总结压缩
+        logging.error(f"get_num_tokens_from_messages方法计算上下文Token数量时出现异常: {e}")
+        compute_error = True
+        
+    # 如果 get_num_tokens_from_messages 方法计算失败，则尝试使用 AIMessage 的 usage_metadata 来计算上下文的Token数量
+    if compute_error:
+        compute_error = False   # 重置错误标志，准备尝试第二种计算方法
+        logging.info(f"尝试使用AIMessage的usage_metadata计算当前上下文的Token数量，以判断是否需要压缩...")
+        try:
+            context_token_count = 0
+            for msg in messages_to_compress:
+                if isinstance(msg, AIMessage):
+                    # AIMessage的usage_metadata是一个TypedDict类型的字典，其中的total_tokens字段表示一轮对话（用户输入+AI输出）的总Token数量。
+                    # 需要将待处理的上下文中所有AIMessage的total_tokens加起来，才能得到整个上下文的总Token数量。
+                    context_token_count += msg.usage_metadata.get("total_tokens", 0)
+            logging.info(f"通过AIMessage的usage_metadata计算得到当前上下文的Token数量为 {context_token_count}，设定阈值为 {max_tokens}。")
+            if context_token_count >= max_tokens:
+                need_compress = True
+        except Exception as e:
+            logging.error(f"通过AIMessage的usage_metadata计算上下文Token数量时出现异常: {e}")
+            compute_error = True
+    
+    # 如果以上两种方法都计算失败，则使用对话轮数来限制上下文长度。虽然这种方法比较粗糙，但在无法计算Token数量的情况下是一个可行的兜底方案。
+    if compute_error:
+        compute_error = False
+        try:
+            logging.info(f"将尝试使用对话轮数限制上下文长度。")
+            # 获取设定的对话轮数阈值
+            max_dialogues = state.get("max_dialogues", CONVERSATION_MAX_DIALOGUES)
+            # 如果计算Token数量失败，则使用对话轮数进行限制
+            if len(messages_to_compress) >= 2 * max_dialogues:   # 可压缩的对话轮数超过指定轮数则压缩
+                need_compress = True
+            logging.info(f"当前上下文的对话轮数为 {len(messages_to_compress) // 2}，设定轮数阈值为 {max_dialogues}。")
+        except Exception as e:
+            logging.error(f"使用对话轮数限制上下文长度时出现异常: {e}")
+            logging.warning(f"无法计算上下文长度，无法执行上下文压缩管理工作逻辑！")
+            need_compress = False
+    
+    # 如果判断结果为上下文过长，超过了设定的阈值，则进行总结压缩
     if need_compress:
         # 上下文过长，进行总结压缩
         logging.info("上下文过长，开始进行总结压缩...")
