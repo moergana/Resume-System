@@ -6,6 +6,7 @@ import AnalysisDetailView from '../views/AnalysisDetailView.vue'
 import JdRepositoryView from '../views/JdRepositoryView.vue'
 import JdDetailView from '../views/JdDetailView.vue'
 import ResumeRepositoryView from '../views/ResumeRepositoryView.vue'
+import ChatBotView from '../views/ChatBotView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -51,6 +52,12 @@ const router = createRouter({
       name: 'resume-repository',
       component: ResumeRepositoryView,
       meta: { title: '简历仓库' }
+    },
+    {
+      path: '/chat',
+      name: 'chatbot',
+      component: ChatBotView,
+      meta: { title: 'AI 智能助手' }
     }
   ]
 })

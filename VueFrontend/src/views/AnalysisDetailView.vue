@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import VueMarkdown from 'vue-markdown-render'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import request from '@/utils/request.js'
 import {
   AI_API_BASE_URL,
@@ -13,6 +13,7 @@ import {
 import { formatDate } from "@/utils/tools.js"
 
 const route = useRoute()
+const router = useRouter()
 const analysisId = route.params.id
 const analysisData = ref(null)
 const loading = ref(false)
@@ -160,12 +161,30 @@ const isEmpty = (val) => {
   return val === null || val === undefined || val === ''
 }
 
+// 打开聊天助手页面（ChatBotView.vue），并将分析记录ID作为query参数传递过去
+const openChatBot = () => {
+  if (analysisData.value && analysisData.value.id) {
+    const route = router.resolve({ name: 'chatbot', query: { analysis_id: analysisData.value.id }})
+    window.open(route.href, '_blank')
+  }
+  else {
+    feedback_messages.value.push({
+      text: '无法打开聊天助手，分析记录ID无效',
+      timeout: 3000,
+      color: 'error'
+    })
+  }
+}
+
+/* 
+// 原方法，该方法用于访问Python后端中Gradio搭建的聊天助手界面
 const openChatBot = () => {
   if (analysisData.value && analysisData.value.id) {
     const chatUrl = `${AI_API_BASE_URL}/?analysis_id=${analysisData.value.id}`
     window.open(chatUrl, '_blank')
   }
 }
+*/
 
 </script>
 

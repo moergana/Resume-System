@@ -1179,10 +1179,19 @@ const handleLogout = () => {
   router.push('/login')
 }
 
+// 打开聊天助手页面（ChatBotView.vue），并将分析记录ID作为query参数传递过去
+const openChatBot = () => {
+  const route = router.resolve({ name: 'chatbot', query: { analysis_id: "" }})
+  window.open(route.href, '_blank')
+}
+
+/*
+// 原方法，该方法用于访问Python后端中Gradio搭建的聊天助手界面
 const openChatBot = () => {
   const chatUrl = `${AI_API_BASE_URL}/?analysis_id=`
   window.open(chatUrl, '_blank')
-}
+} 
+*/
 </script>
 
 <template>

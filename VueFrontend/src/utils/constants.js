@@ -18,6 +18,7 @@ export const SUPPORT_UPLOAD_FILE_TYPES = [
 export const GATEWAY_BASE_URL = 'http://localhost:8080'     // 网关本身的地址
 export const JAVA_API_BASE_URL = 'http://localhost:8080/api'    // 网关转发到Java后端服务的基础URL
 export const AI_API_BASE_URL = 'http://localhost:8080/ai'   // 网关转发到AI（Python）后端服务的基础URL
+// export const AI_API_BASE_URL = 'http://localhost:7860'   // AI聊天助手的后端服务真实地址（可直接访问到AI服务而不通过网关）
 
 // 分析请求处理状态映射表
 // 需要注意：{}定义的对象是普通对象，且不可迭代，并且键会被自动转换为字符串

@@ -607,7 +607,6 @@ async def chat_with_agent(message: str, history: list, request: gradio.Request):
             graph_need_memory = False  # 没有 analysis_id，说明没有预生成数据，进入临时会话模式，不需要记忆功能
 
         # 判断对话智能体是否已经被初始化。如果没有就调用init_conversation_agent
-        # 需要注意init_conversation_agent方法所需的参数从thread_local中获取
         if analysis_id not in sessions_context_register:
             logging.info("对话智能体尚未初始化! 尝试初始化对话智能体中...")
 
@@ -693,6 +692,7 @@ async def chat_with_agent(message: str, history: list, request: gradio.Request):
                             resume_summary_text = ""
                             jd_summary_text = ""
                             is_exist = False
+                            
                         # 如果从MySQL中成功获取到了预生成数据，则将其存入Redis，便于下次快速获取
                         if is_exist:
                             logging.info(f"从MySQL中成功获取到预生成数据，正在缓存到Redis中。Redis Key: {redis_key}")
